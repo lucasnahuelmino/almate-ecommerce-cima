@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-label="Imagen placeholder: Toallas de algodón (pack 4)">
+  <rect width="800" height="1000" fill="#D1E0E3"/>
+  <circle cx="400" cy="415" r="168" fill="#FFFFFF" opacity="0.45"/>
+  <path d="M400 328 c42 62 66 96 66 130 a66 66 0 0 1 -132 0 c0 -34 24 -68 66 -130 z" fill="none" stroke="#6B635A" stroke-width="9" stroke-linejoin="round"/>
+  <text x="400" y="662" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="30" fill="#1F1B16">Toallas de algodón (pack 4)</text>
+  <text x="400" y="704" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="19" fill="#6B635A">Foto pendiente</text>
+</svg>

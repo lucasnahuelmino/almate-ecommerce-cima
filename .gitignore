@@ -1,0 +1,17 @@
+# Ignora las dependencias del servidor (Fase 2)
+node_modules/
+
+# Variables de entorno — NUNCA subir credenciales a git
+.env
+server/.env
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs (archivos de registro)
+*.log
+
+# Carpeta de datos de la base SQLite (Fase 2)
+server/data/

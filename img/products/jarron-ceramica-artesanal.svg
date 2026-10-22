@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-label="Imagen placeholder: Jarrón de cerámica artesanal">
+  <rect width="800" height="1000" fill="#E4D4D9"/>
+  <circle cx="400" cy="415" r="168" fill="#FFFFFF" opacity="0.45"/>
+  <g fill="none" stroke="#6B635A" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"><path d="M368 338 h64"/><path d="M378 338 c0 34 -50 52 -50 98 c0 50 36 72 72 72 s72 -22 72 -72 c0 -46 -50 -64 -50 -98"/></g>
+  <text x="400" y="662" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="30" fill="#1F1B16">Jarrón de cerámica artesanal</text>
+  <text x="400" y="704" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="19" fill="#6B635A">Foto pendiente</text>
+</svg>
