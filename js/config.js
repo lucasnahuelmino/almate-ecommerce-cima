@@ -11,24 +11,25 @@
    viven SOLO en server/.env (Fase 2), nunca acá.
 
    Los colores oficiales del sitio viven en css/tokens.css (que también
-   maneja el modo oscuro). El bloque theme.theme.colors de abajo es una
+   maneja el modo oscuro). El bloque theme.colors de abajo es una
    REFERENCIA de la paleta para que el dueño tenga los valores a mano.
    ========================================================================== */
 
 window.STORE_CONFIG = {
   /* ---------- Marca ---------- */
   brand: {
-    name: "NOMBRE_TIENDA",                       // Reemplazar por el nombre real
-    tagline: "Bazar, hogar y cocina",            // Frase corta bajo el logo
+    name: "CIMA",
+    tagline: "Bazar, hogar y cocina",             // Frase corta bajo el logo
     logo: "assets/logo.svg",                     // Ruta del logo
     favicon: "assets/favicon.svg"                // Ícono del navegador
   },
 
-  /* ---------- Contacto (se muestra en header, footer y checkout) ---------- */
+  /* ---------- Contacto (se muestra en header, footer y checkout) ----------
+     ⚠️ COMPLETAR con los datos reales del negocio. */
   contact: {
     whatsapp: "54911XXXXXXXX",                   // Formato internacional, sin "+" ni espacios
-    email: "hola@nombretienda.com.ar",
-    instagram: "nombretienda",                   // Solo el usuario, sin @
+    email: "hola@cima.com.ar",                   // ⚠️ Confirmar email real
+    instagram: "cima",                           // ⚠️ Confirmar usuario real (sin @)
     address: "Av. Ejemplo 123, Ciudad Autónoma de Buenos Aires",
     schedule: "Lunes a viernes de 10 a 18 h"
   },
@@ -89,16 +90,17 @@ window.STORE_CONFIG = {
 
   /* ---------- SEO (metadatos por defecto) ---------- */
   seo: {
-    defaultTitle: "NOMBRE_TIENDA — Bazar, hogar y cocina",
-    titleTemplate: "%s — NOMBRE_TIENDA",
-    description: "Bazar, cocina, mesa, organización y decoración. Envíos a todo el país. Comprá fácil y seguro.",
+    defaultTitle: "CIMA — Bazar, hogar y cocina",
+    titleTemplate: "%s — CIMA",
+    description: "CIMA — Bazar, cocina, mesa, organización y decoración. Envíos a todo el país. Comprá fácil y seguro.",
     ogImage: "assets/og-image.png"
   },
 
-  /* ---------- Datos legales (visibles en footer — obligatorio en Argentina) ---------- */
+  /* ---------- Datos legales (visibles en footer — obligatorio en Argentina) ----------
+     ⚠️ COMPLETAR con los datos reales (validar con contador/abogado). */
   legal: {
-    businessName: "Razón Social SRL",              // Reemplazar
-    cuit: "30-XXXXXXXX-X",                         // Reemplazar
+    businessName: "Razón Social SRL",              // ⚠️ Reemplazar
+    cuit: "30-XXXXXXXX-X",                         // ⚠️ Reemplazar
     address: "Av. Ejemplo 123, CABA"
   },
 

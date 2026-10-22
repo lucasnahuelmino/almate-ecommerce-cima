@@ -5,6 +5,19 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
 ---
 
+## [0.4.0] — 2026-10-21
+
+### Nombre de la tienda confirmado
+
+#### Cambiado
+- `NOMBRE_TIENDA` → **`CIMA`** en todo el proyecto: `js/config.js` (marca y títulos SEO), `assets/logo.svg`, `assets/favicon.svg` (letra "C"), título de `estilos.html` y registro de decisiones en `AGENTS.md`.
+- Contacto actualizado a `hola@cima.com.ar` / Instagram `cima` (⚠️ pendiente de confirmar con el dueño).
+
+#### Pendiente
+- Datos de contacto reales (WhatsApp, email, Instagram), razón social y CUIT (marcados con ⚠️ en `config.js`).
+
+---
+
 ## [0.3.0] — 2026-10-21
 
 ### Etapa 2 — Datos y config

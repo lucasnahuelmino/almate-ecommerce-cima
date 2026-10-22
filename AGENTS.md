@@ -376,7 +376,7 @@ Cada etapa termina con: ✅ resumen, 🧪 cómo probarlo, 📁 archivos creados/
 
 ## 11. DECISIONES ABIERTAS (usar estos valores por defecto hasta que yo diga otra cosa)
 
-1. **Nombre de la tienda:** `NOMBRE_TIENDA` (placeholder editable en `STORE_CONFIG`).
+1. **Nombre de la tienda:** `CIMA` (confirmado por Épsilon; aplicado en `STORE_CONFIG`, logo y favicon).
 2. **Paleta:** la propuesta en la sección 6.
 3. **Cobro inicial:** WhatsApp + transferencia hasta activar Mercado Pago.
 4. **Hosting Fase 1:** estático (Netlify / Vercel / GitHub Pages). **Fase 2:** Render o Railway para el servidor.
