@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow"><!-- Página interna: no aparece en Google -->
+  <title>Guía de estilos (interna) — NOMBRE_TIENDA</title>
+  <meta name="description" content="Página interna de prueba del design system: colores, tipografía y componentes.">
+
+  <!-- Tipografías: Fraunces (titulares) + Inter (cuerpo) con fallback al sistema -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Inter:wght@400..700&display=swap">
+
+  <!-- Hojas de estilo del proyecto (el orden importa) -->
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+
+  <style>
+    /* Estilos SOLO de esta página interna (no forman parte del sitio) */
+    .sg-section {
+      padding-block: var(--space-7);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .sg-section h2 {
+      margin-bottom: var(--space-2);
+    }
+
+    .sg-note {
+      max-width: 60ch;
+      margin-bottom: var(--space-5);
+      color: var(--color-text-secondary);
+      font-size: var(--fs-sm);
+    }
+
+    .sg-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-3);
+      margin-bottom: var(--space-4);
+    }
+
+    /* Muestras de color */
+    .sg-swatches {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: var(--space-3);
+    }
+
+    .sg-swatch {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    .sg-swatch__color {
+      height: 72px;
+    }
+
+    .sg-swatch__meta {
+      padding: var(--space-2) var(--space-3);
+      font-size: var(--fs-xs);
+      background: var(--color-surface);
+    }
+
+    .sg-swatch__meta code {
+      display: block;
+      color: var(--color-text-secondary);
+    }
+
+    /* Demo del modal (el JS de abajo lo abre/cierra) */
+    .sg-hero {
+      padding-block: var(--space-7) var(--space-5);
+    }
+
+    .sg-badge-demo {
+      display: inline-flex;
+      flex-direction: column;
+      gap: var(--space-1);
+      align-items: flex-start;
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#contenido">Saltar al contenido</a>
+
+  <header class="container sg-hero">
+    <p class="card__category">Página interna · no visible para los clientes</p>
+    <h1>Guía de estilos</h1>
+    <p class="sg-note">
+      Esta es la caja de herramientas visual del proyecto. Cada sección muestra un
+      componente del design system tal como se verá en la tienda. Si algo se ve
+      raro acá, se arregla en <code>css/</code> y se corrige en todo el sitio de una.
+    </p>
+    <div class="sg-row">
+      <button class="btn btn--outline" id="theme-toggle" type="button" aria-pressed="false">
+        🌙 Modo oscuro
+      </button>
+      <button class="btn btn--outline" id="open-modal" type="button">
+        Probar modal
+      </button>
+      <button class="btn btn--outline" id="show-toast" type="button">
+        Probar toast
+      </button>
+    </div>
+  </header>
+
+  <main id="contenido" class="container">
+
+    <!-- ============ COLORES ============ -->
+    <section class="sg-section" aria-labelledby="sg-colores">
+      <h2 id="sg-colores">Colores</h2>
+      <p class="sg-note">
+        Todos viven como variables en <code>css/tokens.css</code>. El fondo crema +
+        la terracota son la firma de la marca; la salvia acompaña.
+      </p>
+      <div class="sg-swatches">
+        <figure class="sg-swatch">
+          <div class="sg-swatch__color" style="background:#FAF7F2"></div>
+          <figcaption class="sg-swatch__meta">Fondo crema <code>--color-bg · #FAF7F2</code></figcaption>
+        </figure>
+        <figure class="sg-swatch">
+          <div class="sg-swatch__color" style="background:#FFFFFF"></div>
+          <figcaption class="sg-swatch__meta">Superficie <code>--color-surface · #FFFFFF</code></figcaption>
+        </figure>
+        <figure class="sg-swatch">
+          <div class="sg-swatch__color" style="background:#1F1B16"></div>
+          <figcaption class="sg-swatch__meta">Texto <code>--color-text · #1F1B16</code></figcaption>
+        </figure>
+        <figure class="sg-swatch">
+          <div class="sg-swatch__color" style="background:#6B635A"></div>
+          <figcaption class="sg-swatch__meta">Texto secundario <code>--color-text-secondary</code></figcaption>
+        </figure>
+        <figure class="sg-swatch">
+          <div class="sg-swatch__color" style="background:#C8553D"></div>
+          <figcaption class="sg-swatch__meta">Terracota (marca) <code>--color-accent · #C8553D</code></figcaption>
+        </figure>
+        <figure class="sg-swatch">
+          <div class="sg-swatch__color" style="background:#B0442D"></div>
+          <figcaption class="sg-swatch__meta">Terracota botón <code>--color-accent-strong · #B0442D</code></figcaption>
+        </figure>
+        <figure class="sg-swatch">
+          <div class="sg-swatch__color" style="background:#7A8F6B"></div>
+          <figcaption class="sg-swatch__meta">Salvia <code>--color-sage · #7A8F6B</code></figcaption>
+        </figure>
+        <figure class="sg-swatch">
+          <div class="sg-swatch__color" style="background:#E8E1D6"></div>
+          <figcaption class="sg-swatch__meta">Bordes <code>--color-border · #E8E1D6</code></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ============ TIPOGRAFÍA ============ -->
+    <section class="sg-section" aria-labelledby="sg-tipo">
+      <h2 id="sg-tipo">Tipografía</h2>
+      <p class="sg-note">
+        Titulares con <strong>Fraunces</strong> (serif expresiva) y cuerpo con
+        <strong>Inter</strong>. Los tamaños son fluidos: crecen con la pantalla.
+      </p>
+      <p style="font-size: var(--fs-2xl); font-family: var(--font-display); line-height: var(--lh-tight);">Tu casa, más linda</p>
+      <p style="font-size: var(--fs-xl); font-family: var(--font-display);">Título de sección</p>
+      <p style="font-size: var(--fs-lg); font-family: var(--font-display);">Subtítulo de producto</p>
+      <p style="font-size: var(--fs-md);">Texto destacado o lead.</p>
+      <p>Cuerpo de texto normal, pensado para leer cómodo en cualquier pantalla.</p>
+      <p style="font-size: var(--fs-sm); color: var(--color-text-secondary);">Texto secundario o ayuda.</p>
+      <p style="font-size: var(--fs-xs); color: var(--color-text-secondary);">Texto chico: notas al pie, SKUs.</p>
+    </section>
+
+    <!-- ============ BOTONES ============ -->
+    <section class="sg-section" aria-labelledby="sg-botones">
+      <h2 id="sg-botones">Botones</h2>
+      <p class="sg-note">
+        Cuatro estilos y tres tamaños. El principal (terracota) se reserva para la
+        acción más importante de cada pantalla.
+      </p>
+
+      <div class="sg-row">
+        <button class="btn btn--primary" type="button">Agregar al carrito</button>
+        <button class="btn btn--secondary" type="button">Ver opciones</button>
+        <button class="btn btn--outline" type="button">Continuar comprando</button>
+        <button class="btn btn--ghost" type="button">Ver más</button>
+      </div>
+      <div class="sg-row">
+        <button class="btn btn--primary btn--sm" type="button">Chico</button>
+        <button class="btn btn--primary" type="button">Normal</button>
+        <button class="btn btn--primary btn--lg" type="button">Grande (checkout)</button>
+      </div>
+      <div class="sg-row">
+        <button class="btn btn--primary" type="button" disabled>Deshabilitado</button>
+        <button class="btn btn--outline" type="button">
+          <svg class="btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          Con ícono
+        </button>
+        <button class="btn btn--icon btn--outline" type="button" aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <button class="btn btn--primary btn--block btn--lg" type="button">Botón a todo el ancho</button>
+    </section>
+
+    <!-- ============ BADGES ============ -->
+    <section class="sg-section" aria-labelledby="sg-badges">
+      <h2 id="sg-badges">Badges (etiquetas)</h2>
+      <p class="sg-note">Se superponen sobre la foto del producto y en el carrito.</p>
+      <div class="sg-row">
+        <span class="badge badge--new">Nuevo</span>
+        <span class="badge badge--offer">-25%</span>
+        <span class="badge badge--low-stock">¡Últimas 3 unidades!</span>
+        <span class="badge badge--sold-out">Agotado</span>
+      </div>
+    </section>
+
+    <!-- ============ CARD DE PRODUCTO ============ -->
+    <section class="sg-section" aria-labelledby="sg-cards">
+      <h2 id="sg-cards">Card de producto</h2>
+      <p class="sg-note">
+        Se usa en el home, la grilla del catálogo y los relacionados. La foto es
+        4:5, hay badges, precio tachado, cuotas y botón de agregar.
+      </p>
+      <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-4);">
+
+        <article class="card">
+          <div class="card__media">
+            <div class="card__badges">
+              <span class="badge badge--offer">-18%</span>
+            </div>
+            <img src="img/products/set-ollas-antiadherente-8-piezas.svg" alt="Set de ollas antiadherente 8 piezas" loading="lazy" width="800" height="1000">
+          </div>
+          <div class="card__body">
+            <p class="card__category">Cocina</p>
+            <h3 class="card__title"><a href="#">Set de ollas antiadherente 8 piezas</a></h3>
+            <div class="card__footer">
+              <p class="price">
+                $89.900
+                <span class="price__compare">$109.900</span>
+                <span class="price__installments">6 cuotas sin interés de $14.983</span>
+              </p>
+            </div>
+            <button class="btn btn--primary btn--block" type="button">Agregar</button>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card__media">
+            <div class="card__badges">
+              <span class="badge badge--new">Nuevo</span>
+              <span class="badge badge--low-stock">¡Últimas 3 unidades!</span>
+            </div>
+            <img src="img/products/jarron-ceramica-artesanal.svg" alt="Jarrón de cerámica artesanal" loading="lazy" width="800" height="1000">
+          </div>
+          <div class="card__body">
+            <p class="card__category">Decoración</p>
+            <h3 class="card__title"><a href="#">Jarrón de cerámica artesanal</a></h3>
+            <div class="card__footer">
+              <p class="price">$32.500</p>
+            </div>
+            <button class="btn btn--outline btn--block" type="button">Ver producto</button>
+          </div>
+        </article>
+
+        <article class="card" aria-hidden="true">
+          <div class="card__media">
+            <div class="skeleton skeleton--media"></div>
+          </div>
+          <div class="card__body">
+            <div class="skeleton skeleton--text" style="width: 35%;"></div>
+            <div class="skeleton skeleton--title"></div>
+            <div class="skeleton skeleton--text" style="width: 55%;"></div>
+            <div class="skeleton skeleton--text" style="height: 44px;"></div>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ============ FORMULARIOS ============ -->
+    <section class="sg-section" aria-labelledby="sg-form">
+      <h2 id="sg-form">Campos de formulario</h2>
+      <p class="sg-note">
+        Se usan en contacto y checkout. Con validación en vivo (estado de error
+        con <code>field--error</code> y mensaje <code>field__error</code>).
+      </p>
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-4); max-width: 720px;">
+
+        <div class="field">
+          <label class="field__label" for="demo-nombre">Nombre y apellido <span class="required" aria-hidden="true">*</span></label>
+          <input class="field__input" id="demo-nombre" type="text" placeholder="María González" autocomplete="name" required>
+          <p class="field__hint">Como figura en tu DNI.</p>
+        </div>
+
+        <div class="field field--error">
+          <label class="field__label" for="demo-email">Email <span class="required" aria-hidden="true">*</span></label>
+          <input class="field__input" id="demo-email" type="email" value="maría@ejemplo" aria-invalid="true" aria-describedby="demo-email-error" required>
+          <p class="field__error" id="demo-email-error">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16.5v.01"/></svg>
+            Ingresá un email válido, por ejemplo: maria@ejemplo.com
+          </p>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="demo-zona">Zona de envío</label>
+          <select class="field__input" id="demo-zona">
+            <option>Retiro en local (gratis)</option>
+            <option selected>CABA y GBA — $6.500</option>
+            <option>Interior del país — $9.800</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="demo-notas">Notas para el envío</label>
+          <textarea class="field__input" id="demo-notas" placeholder="Ej: el timbre no funciona, llamar al celular."></textarea>
+        </div>
+      </div>
+
+      <div class="sg-row" style="margin-top: var(--space-4);">
+        <label class="field__check">
+          <input type="checkbox">
+          <span>Acepto los <a href="#">términos y condiciones</a> y la política de privacidad.</span>
+        </label>
+      </div>
+      <div class="sg-row">
+        <label class="field__check">
+          <input type="radio" name="demo-pago" checked>
+          <span>Transferencia bancaria (-10%)</span>
+        </label>
+        <label class="field__check">
+          <input type="radio" name="demo-pago">
+          <span>Mercado Pago (hasta 6 cuotas)</span>
+        </label>
+      </div>
+    </section>
+
+    <!-- ============ CANTIDAD, CHIPS Y PROGRESO ============ -->
+    <section class="sg-section" aria-labelledby="sg-misc">
+      <h2 id="sg-misc">Selector de cantidad, chips y barra de progreso</h2>
+      <p class="sg-note">Controles del carrito, filtros del catálogo y avance hacia el envío gratis.</p>
+
+      <div class="sg-row">
+        <div class="qty" role="group" aria-label="Cantidad">
+          <button class="qty__btn" type="button" aria-label="Restar una unidad">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg>
+          </button>
+          <span class="qty__value" aria-live="polite">2</span>
+          <button class="qty__btn" type="button" aria-label="Sumar una unidad">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="sg-row">
+        <button class="chip is-active" type="button" aria-pressed="true">Cocina</button>
+        <button class="chip" type="button" aria-pressed="false">Baño</button>
+        <button class="chip" type="button" aria-pressed="false">En stock</button>
+        <button class="chip" type="button" aria-pressed="false">En oferta</button>
+      </div>
+
+      <div style="max-width: 420px;">
+        <p style="font-size: var(--fs-sm); margin-bottom: var(--space-2);">
+          Te faltan <strong>$12.400</strong> para tener <strong>envío gratis</strong> 🚚
+        </p>
+        <div class="progress" role="progressbar" aria-valuenow="84" aria-valuemin="0" aria-valuemax="100" aria-label="Progreso para envío gratis">
+          <div class="progress__fill" style="width: 84%;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ TOAST Y MODAL ============ -->
+    <section class="sg-section" aria-labelledby="sg-feedback">
+      <h2 id="sg-feedback">Toasts y modal</h2>
+      <p class="sg-note">
+        El toast avisa sin interrumpir ("Agregado al carrito"). El modal se usa
+        para confirmaciones importantes (por ejemplo, eliminar un producto).
+        Usá los botones del principio de la página para probarlos.
+      </p>
+      <div class="sg-row">
+        <button class="btn btn--outline" type="button" id="show-toast-2">Mostrar toast</button>
+        <button class="btn btn--outline" type="button" id="open-modal-2">Abrir modal</button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast de prueba (invisible hasta que se active) -->
+  <div class="toast" role="status" aria-live="polite" id="demo-toast">
+    <span class="toast__dot" aria-hidden="true"></span>
+    <span>Producto agregado al carrito 🛒</span>
+    <button class="toast__close" type="button" aria-label="Cerrar aviso">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+
+  <!-- Modal de prueba -->
+  <div class="modal" id="demo-modal" hidden>
+    <div class="modal__backdrop" data-modal-close></div>
+    <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="demo-modal-title">
+      <h3 id="demo-modal-title">¿Eliminar producto?</h3>
+      <p>Se va a quitar el <strong>Set de ollas antiadherente</strong> de tu carrito. Podés volver a agregarlo cuando quieras.</p>
+      <div class="modal__actions">
+        <button class="btn btn--outline" type="button" data-modal-close>Cancelar</button>
+        <button class="btn btn--primary" type="button" data-modal-close>Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       JS SOLO DE ESTA PÁGINA DE PRUEBA (no forma parte del sitio).
+       En la Etapa 3 esto se convierte en js/ui/toast.js y js/ui/modal.js.
+       ================================================================ -->
+  <script defer>
+    document.addEventListener('DOMContentLoaded', () => {
+      // ---- Modo oscuro: guarda la elección y actualiza el botón ----
+      const themeToggle = document.getElementById('theme-toggle');
+
+      // ¿Está en oscuro AHORA? Puede venir del atributo data-theme (elección
+      // manual) o de la preferencia del sistema (automático, sin atributo).
+      const isDarkNow = () => {
+        const attr = document.documentElement.getAttribute('data-theme');
+        if (attr === 'dark') return true;
+        if (attr === 'light') return false;
+        return window.matchMedia('(prefers-color-scheme: dark)').matches;
+      };
+
+      const setThemeLabel = () => {
+        themeToggle.textContent = isDarkNow() ? '☀️ Modo claro' : '🌙 Modo oscuro';
+        themeToggle.setAttribute('aria-pressed', String(isDarkNow()));
+      };
+
+      setThemeLabel(); // Estado inicial según el sistema
+      themeToggle.addEventListener('click', () => {
+        // Si está en oscuro → pasa a claro; si está en claro → pasa a oscuro
+        document.documentElement.setAttribute('data-theme', isDarkNow() ? 'light' : 'dark');
+        setThemeLabel();
+      });
+
+      // ---- Toast ----
+      const toast = document.getElementById('demo-toast');
+      let toastTimer;
+      const showToast = () => {
+        toast.classList.add('is-visible');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove('is-visible'), 3500);
+      };
+      document.getElementById('show-toast').addEventListener('click', showToast);
+      document.getElementById('show-toast-2').addEventListener('click', showToast);
+      toast.querySelector('.toast__close').addEventListener('click', () => {
+        toast.classList.remove('is-visible');
+        clearTimeout(toastTimer);
+      });
+
+      // ---- Modal (con lo mínimo accesible: foco y teclado) ----
+      const modal = document.getElementById('demo-modal');
+      const panel = modal.querySelector('.modal__panel');
+      const focusables = () => panel.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+      let lastFocused = null;
+
+      const openModal = () => {
+        lastFocused = document.activeElement;
+        modal.hidden = false;
+        focusables()[0]?.focus();
+        document.addEventListener('keydown', onKeydown);
+      };
+      const closeModal = () => {
+        modal.hidden = true;
+        document.removeEventListener('keydown', onKeydown);
+        lastFocused?.focus(); // Devuelve el foco a quien abrió el modal
+      };
+      // Escape cierra; Tab queda "atrapado" dentro del modal
+      const onKeydown = (e) => {
+        if (e.key === 'Escape') { closeModal(); return; }
+        if (e.key !== 'Tab') return;
+        const items = focusables();
+        if (!items.length) return;
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      };
+
+      document.getElementById('open-modal').addEventListener('click', openModal);
+      document.getElementById('open-modal-2').addEventListener('click', openModal);
+      modal.querySelectorAll('[data-modal-close]').forEach((el) => el.addEventListener('click', closeModal));
+    });
+  </script>
+</body>
+</html>

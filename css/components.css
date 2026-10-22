@@ -1,0 +1,739 @@
+/* ==========================================================================
+   components.css — Componentes reutilizables de la interfaz
+   --------------------------------------------------------------------------
+   Botones, badges (etiquetas), cards de producto, campos de formulario,
+   selector de cantidad, chips (filtros), barra de progreso, esqueletos de
+   carga, toasts (avisos flotantes), modal y base del drawer lateral.
+   Estos estilos se usan en TODAS las páginas del sitio.
+   ========================================================================== */
+
+/* ==========================================================================
+   1. BOTONES
+   Variants: primary (terracota) · secondary (salvia) · outline · ghost
+   Tamaños:  sm · (default = md) · lg  ·  utilidad --block (ancho completo)
+   ========================================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--tap-min);      /* 44px: área táctil mínima */
+  padding: 0 var(--space-5);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.btn:active {
+  transform: scale(0.98); /* Feedback táctil al presionar */
+}
+
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Terracota — acciones principales ("Agregar al carrito", "Finalizar compra") */
+.btn--primary {
+  background-color: var(--color-accent-strong);
+  color: var(--color-on-strong);
+}
+
+.btn--primary:hover {
+  background-color: var(--color-accent-hover);
+}
+
+/* Salvia — acciones secundarias */
+.btn--secondary {
+  background-color: var(--color-sage-strong);
+  color: var(--color-on-strong);
+}
+
+.btn--secondary:hover {
+  filter: brightness(0.92);
+}
+
+/* Contorno — acciones terciarias */
+.btn--outline {
+  background-color: transparent;
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+
+.btn--outline:hover {
+  background-color: var(--color-surface-2);
+}
+
+/* Fantasma — acciones sutiles dentro de tarjetas y menús */
+.btn--ghost {
+  background-color: transparent;
+  color: var(--color-accent-text);
+}
+
+.btn--ghost:hover {
+  background-color: var(--color-accent-soft);
+}
+
+/* Tamaños */
+.btn--sm {
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  font-size: var(--fs-xs);
+  border-radius: var(--radius-sm);
+}
+
+.btn--lg {
+  min-height: 52px;
+  padding: 0 var(--space-6);
+  font-size: var(--fs-base);
+}
+
+.btn--block {
+  width: 100%;
+}
+
+/* Ícono dentro de un botón: mantiene el tamaño relativo al texto */
+.btn__icon {
+  width: 1.15em;
+  height: 1.15em;
+  flex: none;
+}
+
+/* Botón solo ícono (carrito, cerrar, etc.) */
+.btn--icon {
+  width: var(--tap-min);
+  min-height: var(--tap-min);
+  padding: 0;
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+}
+
+.btn--icon:hover {
+  background-color: var(--color-surface-2);
+}
+
+/* ==========================================================================
+   2. BADGES (etiquetas pequeñas)
+   ========================================================================== */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px var(--space-2);
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.badge--new {
+  background-color: var(--color-sage-soft);
+  color: var(--color-success);
+}
+
+.badge--offer {
+  background-color: var(--color-accent-strong);
+  color: var(--color-on-strong);
+}
+
+.badge--low-stock {
+  background-color: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.badge--sold-out {
+  background-color: var(--color-surface-2);
+  color: var(--color-text-secondary);
+}
+
+/* ==========================================================================
+   3. CARD DE PRODUCTO (tarjeta del catálogo)
+   ========================================================================== */
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition:
+    transform var(--transition-base),
+    box-shadow var(--transition-base),
+    border-color var(--transition-base);
+}
+
+.card:hover {
+  transform: translateY(-4px); /* Se eleva suavemente al pasar el mouse */
+  box-shadow: var(--shadow-2);
+  border-color: var(--color-border-strong);
+}
+
+/* Zona de imagen: ratio 4:5, igual que la recomendación de fotos */
+.card__media {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  background-color: var(--color-surface-2);
+  overflow: hidden;
+}
+
+.card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-slow);
+}
+
+.card:hover .card__media img {
+  transform: scale(1.04); /* Zoom sutil en la foto */
+}
+
+/* Etiquetas ("Nuevo", "-25%") arriba a la izquierda de la foto */
+.card__badges {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-3);
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+
+.card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  flex: 1; /* Ocupa el resto de la altura para alinear botones abajo */
+}
+
+.card__category {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.card__title {
+  font-family: var(--font-body);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-snug);
+  letter-spacing: normal;
+}
+
+.card__title a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* El título entero es clicable (patrón accesible de tarjetas) */
+.card__title a::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: auto; /* Empuja el pie al fondo de la card */
+}
+
+/* ==========================================================================
+   4. PRECIOS
+   ========================================================================== */
+
+.price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  color: var(--color-text);
+}
+
+.price--lg {
+  font-size: var(--fs-lg);
+}
+
+.price__compare {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-regular);
+  color: var(--color-text-secondary);
+  text-decoration: line-through; /* Precio tachado */
+}
+
+.price__installments {
+  flex-basis: 100%; /* Salta a renglón propio */
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-regular);
+  color: var(--color-success);
+}
+
+/* ==========================================================================
+   5. CAMPOS DE FORMULARIO
+   Uso:
+   <div class="field">
+     <label class="field__label" for="nombre">Nombre</label>
+     <input class="field__input" id="nombre" ...>
+     <p class="field__hint">Como figura en tu DNI.</p>
+   </div>
+   Con error: agregar class="field--error" al contenedor + <p class="field__error">
+   ========================================================================== */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.field__label {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-text);
+}
+
+/* El asterisco obligatorio */
+.field__label .required {
+  color: var(--color-danger);
+}
+
+.field__input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 var(--space-4);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+textarea.field__input {
+  min-height: 120px;
+  padding: var(--space-3) var(--space-4);
+  resize: vertical;
+}
+
+.field__input::placeholder {
+  color: var(--color-text-secondary);
+  opacity: 0.8;
+}
+
+.field__input:hover {
+  border-color: var(--color-text-secondary);
+}
+
+.field__input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
+}
+
+/* Estado de error (accesible: se suma aria-invalid="true" en el HTML) */
+.field--error .field__input {
+  border-color: var(--color-danger);
+}
+
+.field__hint {
+  font-size: var(--fs-xs);
+  color: var(--color-text-secondary);
+}
+
+.field__error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  color: var(--color-danger);
+}
+
+/* Select nativo con flecha consistente */
+select.field__input {
+  appearance: none;
+  padding-right: var(--space-7);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%236B635A' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-4) center;
+  background-size: 16px;
+}
+
+/* --- Checkbox y radio personalizados --- */
+.field__check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  min-height: var(--tap-min);
+  padding: var(--space-2) 0;
+  cursor: pointer;
+}
+
+.field__check input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  appearance: none;
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: 5px;
+  background-color: var(--color-surface);
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.field__check input[type="radio"] {
+  border-radius: 50%;
+}
+
+.field__check input:checked {
+  background-color: var(--color-accent-strong);
+  border-color: var(--color-accent-strong);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 8.5l3.5 3.5L13 5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 13px;
+}
+
+.field__check input[type="radio"]:checked {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='4.5' fill='%23ffffff'/%3E%3C/svg%3E");
+  background-size: 16px;
+}
+
+/* ==========================================================================
+   6. SELECTOR DE CANTIDAD
+   ========================================================================== */
+
+.qty {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.qty__btn {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  color: var(--color-text);
+  transition: background-color var(--transition-fast);
+}
+
+.qty__btn:hover {
+  background-color: var(--color-surface-2);
+}
+
+.qty__btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.qty__value {
+  min-width: 3ch; /* Reserva espacio para 2 dígitos */
+  text-align: center;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums; /* Dígitos de ancho uniforme */
+}
+
+/* ==========================================================================
+   7. CHIPS (filtros del catálogo)
+   ========================================================================== */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 36px;
+  padding: 0 var(--space-4);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-sm);
+  color: var(--color-text);
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.chip:hover {
+  border-color: var(--color-text-secondary);
+}
+
+.chip.is-active {
+  background-color: var(--color-accent-soft);
+  border-color: var(--color-accent);
+  color: var(--color-accent-text);
+  font-weight: var(--fw-semibold);
+}
+
+/* ==========================================================================
+   8. BARRA DE PROGRESO ("Te faltan $X para envío gratis")
+   ========================================================================== */
+
+.progress {
+  height: 8px;
+  background-color: var(--color-surface-2);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.progress__fill {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, var(--color-sage), var(--color-sage-strong));
+  border-radius: inherit;
+  transition: width var(--transition-slow);
+}
+
+/* ==========================================================================
+   9. ESQUELETOS DE CARGA (skeletons)
+   ========================================================================== */
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-2) 25%,
+    var(--color-border) 37%,
+    var(--color-surface-2) 63%
+  );
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+  border-radius: var(--radius-sm);
+}
+
+.skeleton--text {
+  height: 1em;
+  margin-block: 0.35em;
+}
+
+.skeleton--title {
+  height: 1.4em;
+  width: 70%;
+}
+
+.skeleton--media {
+  aspect-ratio: 4 / 5;
+  border-radius: 0;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+/* ==========================================================================
+   10. TOASTS (avisos flotantes, ej. "Agregado al carrito")
+   ========================================================================== */
+
+.toast {
+  position: fixed;
+  bottom: var(--space-5);
+  left: 50%;
+  z-index: var(--z-toast);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  max-width: min(92vw, 420px);
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--color-text);
+  color: var(--color-text-inverse);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-3);
+  opacity: 0;
+  transform: translate(-50%, 16px);
+  pointer-events: none;
+  transition:
+    opacity var(--transition-base),
+    transform var(--transition-base);
+}
+
+.toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  pointer-events: auto;
+}
+
+.toast__dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--color-sage);
+}
+
+.toast__dot--error {
+  background-color: var(--color-danger);
+}
+
+.toast__close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin-left: auto;
+  border-radius: var(--radius-sm);
+  color: inherit;
+}
+
+.toast__close:hover {
+  background-color: rgb(255 255 255 / 12%);
+}
+
+/* ==========================================================================
+   11. MODAL (cuadro de diálogo centrado)
+   ========================================================================== */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+}
+
+.modal[hidden] {
+  display: none;
+}
+
+.modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background-color: var(--color-overlay);
+}
+
+.modal__panel {
+  position: relative;
+  width: min(100%, 480px);
+  max-height: min(85vh, 640px);
+  overflow-y: auto;
+  padding: var(--space-6);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-3);
+  animation: modal-in var(--transition-base) var(--ease);
+}
+
+.modal__panel h3 {
+  margin-bottom: var(--space-3);
+}
+
+.modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ==========================================================================
+   12. DRAWER LATERAL (base del mini-carrito — se completa en la Etapa 3)
+   ========================================================================== */
+
+.drawer {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  z-index: var(--z-drawer);
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 420px);
+  background-color: var(--color-surface);
+  border-left: 1px solid var(--color-border);
+  box-shadow: var(--shadow-3);
+  transform: translateX(100%);
+  transition: transform var(--transition-base);
+  visibility: hidden;
+}
+
+.drawer.is-open {
+  transform: translateX(0);
+  visibility: visible;
+}
+
+.drawer__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-drawer) - 1);
+  background-color: var(--color-overlay);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--transition-base),
+    visibility var(--transition-base);
+}
+
+.drawer__backdrop.is-open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.drawer__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.drawer__title {
+  font-size: var(--fs-md);
+}
+
+.drawer__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-5);
+}
+
+.drawer__footer {
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--color-border);
+}

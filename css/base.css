@@ -1,0 +1,188 @@
+/* ==========================================================================
+   base.css — Reset mínimo + estilos globales
+   --------------------------------------------------------------------------
+   Limpia las inconsistencias que traen los navegadores por defecto y define
+   el aspecto base del texto, los enlaces, el foco visible y las utilidades
+   generales (.container, .sr-only, .skip-link).
+   Orden de carga: tokens.css → base.css → components.css → layout.css → pages.css
+   ========================================================================== */
+
+/* --- Reset moderno y mínimo --- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0; /* Quita márgenes por defecto de <p>, <h1>, etc. */
+}
+
+html {
+  -webkit-text-size-adjust: 100%; /* Evita el zoom automático raro en iOS */
+  scroll-behavior: smooth;
+}
+
+/* La página nace con el alto mínimo de la ventana visible (móvil incluido) */
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  line-height: var(--lh-normal);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Imágenes y medios: nunca más anchas que su contenedor */
+img,
+picture,
+svg,
+video,
+canvas {
+  display: block;
+  max-width: 100%;
+}
+
+/* Formularios heredan la tipografía del sitio */
+input,
+button,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+/* --- Tipografía --- */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+  text-wrap: balance; /* Reparte mejor el título entre renglones */
+}
+
+h1 { font-size: var(--fs-2xl); }
+h2 { font-size: var(--fs-xl); }
+h3 { font-size: var(--fs-lg); }
+h4 { font-size: var(--fs-md); }
+h5,
+h6 { font-size: var(--fs-base); }
+
+p {
+  text-wrap: pretty; /* Evita viudas al final de párrafo */
+}
+
+small {
+  font-size: var(--fs-xs);
+}
+
+/* --- Enlaces --- */
+a {
+  color: var(--color-accent-text);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+/* --- Reglas horizontales y listas --- */
+hr {
+  border: none;
+  border-top: 1px solid var(--color-border);
+}
+
+/* --- Foco visible (accesibilidad WCAG 2.2 — navegable por teclado) --- */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Selección de texto con el mouse, acorde a la paleta */
+::selection {
+  background: var(--color-accent-soft);
+  color: var(--color-text);
+}
+
+/* Cuando alguien pide "reducir movimiento" en el sistema, respetamos eso */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* --- Utilidades --- */
+
+/* Contenedor principal: máx. 1200px, centrado, con aire a los costados */
+.container {
+  width: min(100% - 2rem, var(--container-max));
+  margin-inline: auto;
+}
+
+.container--narrow {
+  width: min(100% - 2rem, var(--container-narrow));
+}
+
+/* Visible para lectores de pantalla, invisible a la vista */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Enlace "Saltar al contenido" (solo aparece al presionar Tab) */
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: var(--space-4);
+  z-index: var(--z-toast);
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-2);
+  text-decoration: none;
+  transition: top var(--transition-fast);
+}
+
+.skip-link:focus {
+  top: var(--space-4);
+}
+
+/* Anclas: que el título no quede tapado por el header compacto */
+:target {
+  scroll-margin-top: calc(var(--header-height) + var(--space-4));
+}
