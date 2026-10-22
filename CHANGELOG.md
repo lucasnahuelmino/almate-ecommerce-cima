@@ -5,6 +5,26 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
 ---
 
+## [0.3.0] — 2026-10-21
+
+### Etapa 2 — Datos y config
+
+#### Agregado
+- `js/config.js` (`window.STORE_CONFIG`): marca, contacto (WhatsApp/email/Instagram), moneda es-AR, paleta de referencia, envíos (envío gratis desde $80.000 + zonas CABA/GBA e Interior), pagos (provider `whatsapp`, descuento transferencia 10%), 2 cupones preparados, SEO por defecto, datos legales y créditos. Sin credenciales reales (solo placeholders).
+- `js/data/categories.js` (`window.CATEGORIES`): 8 categorías reales + "Ofertas" como categoría virtual (`isVirtual`), cada una con imagen, ícono SVG inline y descripción.
+- `js/data/products.js` (`window.PRODUCTS`): **24 productos** realistas de bazar argentino, repartidos en las 8 categorías. Precios en ARS enteros de $9.900 a $129.900, 9 con precio tachado, 6 destacados, 1 agotado y 3 con stock bajo (para probar todos los estados). Incluye SKU, descripción HTML, especificaciones, variantes de color, etiquetas y `createdAt`.
+
+#### Verificado en navegador
+- Cero problemas de validación: sin ids/slugs/SKUs duplicados, todos los precios son enteros, `comparePrice > price`, todas las categorías existen.
+- Las 32 imágenes (24 productos + 8 categorías) responden 200.
+- `STORE_CONFIG` completo y con la estructura que espera la Fase 2.
+
+#### Notas
+- Las imágenes de productos apuntan al placeholder SVG hasta cargar fotos reales (cuando se carguen, se actualiza el array `images`).
+- El bloque `theme.colors` de config es referencia; lo operativo de colores sigue en `css/tokens.css` (que además maneja el modo oscuro).
+
+---
+
 ## [0.2.0] — 2026-10-21
 
 ### Etapa 1 — Design system
