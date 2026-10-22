@@ -24,14 +24,13 @@ window.STORE_CONFIG = {
     favicon: "assets/favicon.svg"                // Ícono del navegador
   },
 
-  /* ---------- Contacto (se muestra en header, footer y checkout) ----------
-     ⚠️ COMPLETAR con los datos reales del negocio. */
+  /* ---------- Contacto (se muestra en header, footer y checkout) ---------- */
   contact: {
-    whatsapp: "54911XXXXXXXX",                   // Formato internacional, sin "+" ni espacios
-    email: "hola@cima.com.ar",                   // ⚠️ Confirmar email real
-    instagram: "cima",                           // ⚠️ Confirmar usuario real (sin @)
-    address: "Av. Ejemplo 123, Ciudad Autónoma de Buenos Aires",
-    schedule: "Lunes a viernes de 10 a 18 h"
+    whatsapp: "5491134761743",                   // Formato internacional, sin "+" ni espacios
+    email: "cima.home@gmail.com",
+    instagram: "cima.hogar",                     // Solo el usuario, sin @
+    address: "",                                 // ⚠️ Pendiente: dirección del local
+    schedule: ""                                 // ⚠️ Pendiente: horario de atención
   },
 
   /* ---------- Moneda y formato (es-AR: $ 89.900) ---------- */
@@ -97,11 +96,11 @@ window.STORE_CONFIG = {
   },
 
   /* ---------- Datos legales (visibles en footer — obligatorio en Argentina) ----------
-     ⚠️ COMPLETAR con los datos reales (validar con contador/abogado). */
+     Validar estos textos con contador/abogado. */
   legal: {
-    businessName: "Razón Social SRL",              // ⚠️ Reemplazar
-    cuit: "30-XXXXXXXX-X",                         // ⚠️ Reemplazar
-    address: "Av. Ejemplo 123, CABA"
+    businessName: "Lucas Nahuel Miño",
+    cuit: "20-36296907-8",
+    address: ""                                   // ⚠️ Pendiente: domicilio fiscal
   },
 
   /* ---------- Créditos del pie ---------- */

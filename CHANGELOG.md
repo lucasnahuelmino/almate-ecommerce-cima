@@ -5,6 +5,22 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
 ---
 
+## [0.5.0] — 2026-10-21
+
+### Datos de contacto y legales reales
+
+#### Cambiado en `js/config.js`
+- WhatsApp → `5491134761743`
+- Email → `cima.home@gmail.com`
+- Instagram → `cima.hogar`
+- Razón social → `Lucas Nahuel Miño`
+- CUIT → `20-36296907-8` (verificado: dígito corrector válido)
+
+#### Pendiente
+- Dirección del local, horario de atención y domicilio fiscal (campos `address`/`schedule` vacíos, marcados ⚠️).
+
+---
+
 ## [0.4.0] — 2026-10-21
 
 ### Nombre de la tienda confirmado
