@@ -5,6 +5,19 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
 ---
 
+## [1.5.0] — 2026-10-22
+
+### Etapa 12 — Backend base
+
+#### Agregado
+- API Express con `GET /api/health`, `GET /api/products` y `GET /api/products/:slug`.
+- Base SQLite que sincroniza el catálogo actual al iniciar el servidor y sirve solo productos activos.
+- Configuración de puerto, base local y CORS desde variables de entorno, con ejemplo sin credenciales.
+- Seis pruebas automatizadas para salud, catálogo, productos inactivos, consultas y orígenes CORS.
+
+#### Cambiado
+- README con instrucciones para instalar, iniciar y probar la API, y aclaración de que esta etapa todavía no procesa pedidos ni pagos.
+
 ## [1.4.0] — 2026-10-22
 
 ### Etapa 11 — README y entrega de Fase 1

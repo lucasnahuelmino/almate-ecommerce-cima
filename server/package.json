@@ -1,0 +1,21 @@
+{
+  "name": "cima-store-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "API de catálogo para la tienda CIMA",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.2.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0"
+  }
+}

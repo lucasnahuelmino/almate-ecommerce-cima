@@ -11,6 +11,7 @@ Tienda estática hecha con HTML, CSS y JavaScript. No requiere instalar programa
 - [Editar categorías](#editar-categorías)
 - [Cambiar datos del negocio](#cambiar-datos-del-negocio)
 - [Publicar la tienda](#publicar-la-tienda)
+- [API del catálogo — inicio de Fase 2](#api-del-catálogo--inicio-de-fase-2)
 - [Límites importantes de esta versión](#límites-importantes-de-esta-versión)
 - [Antes de publicar: checklist](#antes-de-publicar-checklist)
 - [SEO cuando haya un dominio](#seo-cuando-haya-un-dominio)
@@ -150,6 +151,21 @@ Un despliegue manual puede requerir volver a subir la carpeta cada vez que cambi
 
 El sitio usa rutas relativas y está preparado para hosting estático y apertura local. En cualquier proveedor, verificá que las rutas de páginas, imágenes, estilos y scripts carguen bien en la URL pública, especialmente si se publica dentro de una subcarpeta.
 
+## API del catálogo — inicio de Fase 2
+
+La API inicial está en `server/`, separada de la tienda estática. Requiere Node.js 20 o posterior.
+
+1. Abrí una terminal dentro de la carpeta `server/`.
+2. Ejecutá `npm install` para instalar Express y SQLite.
+3. Ejecutá `npm start`.
+4. Abrí `http://localhost:3000/api/health`. Una respuesta correcta indica `"status": "ok"` y `"database": "ok"`.
+5. Abrí `http://localhost:3000/api/products` para consultar las categorías y productos activos, o `http://localhost:3000/api/products/set-ollas-antiadherente-8-piezas` para consultar una ficha.
+6. Para ejecutar las pruebas automatizadas, abrí otra terminal en `server/` y ejecutá `npm test`.
+
+La API crea `server/data/catalog.sqlite` y sincroniza el catálogo inicial desde `js/data/categories.js` y `js/data/products.js` al iniciar. Los cambios hechos a esos archivos se reflejan en la base al reiniciar el servicio. La carpeta `server/data/` es local y no se sube al repositorio.
+
+La configuración es opcional: `PORT` (3000 por defecto), `DB_PATH` (`./data/catalog.sqlite`) y `CORS_ORIGIN` (lista separada por comas; vacía por defecto). Si necesitás cambiarla, copiá `server/.env.example` a `server/.env` y editá ese archivo. No agregues tokens ni contraseñas: pagos y credenciales quedan fuera del alcance de este backend base.
+
 ## Límites importantes de esta versión
 
 - El pedido se prepara para que el cliente lo envíe por WhatsApp. **No se envía automáticamente ni se cobra en la web**; el cliente debe revisar y enviar el mensaje y CIMA confirmar el pedido.
@@ -158,6 +174,7 @@ El sitio usa rutas relativas y está preparado para hosting estático y apertura
 - Los precios, cuotas, descuentos, stock y costos de entrega son datos configurados y deben mantenerse actualizados. Las tarifas de envío se confirman al coordinar el pedido.
 - Los textos de términos, privacidad, envíos y devoluciones, y arrepentimiento son **plantillas base**, no asesoramiento legal. Antes de publicar o aceptar pedidos, el titular debe validarlos con su contador o abogado y completar los datos comerciales y legales que correspondan.
 - No hay pagos Mercado Pago activos en esta fase. Nunca publiques credenciales de pago en archivos del sitio.
+- La API nueva solo expone salud y catálogo de lectura; aún no crea pedidos, cobra pagos ni se conecta automáticamente con las páginas estáticas.
 
 ## Antes de publicar: checklist
 
