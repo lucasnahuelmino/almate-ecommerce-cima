@@ -8,6 +8,20 @@
   const formatPrice = window.Utils.formatPrice;
 
   const createCheckout = async (order) => {
+    const apiBaseUrl = window.STORE_CONFIG.catalog && window.STORE_CONFIG.catalog.apiBaseUrl ||
+      window.STORE_CONFIG.payments && window.STORE_CONFIG.payments.apiBaseUrl;
+    if (apiBaseUrl) {
+      const response = await fetch(apiBaseUrl.replace(/\/+$/, "") + "/api/orders/whatsapp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(order),
+        cache: "no-store"
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "No pudimos registrar el pedido.");
+      return { type: "whatsapp", ...result };
+    }
+
     const phone = window.STORE_CONFIG.contact.whatsapp;
     if (!phone) throw new Error("Falta configurar el número de WhatsApp de la tienda.");
 

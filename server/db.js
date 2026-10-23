@@ -23,6 +23,89 @@ const schema = `
 
   CREATE INDEX IF NOT EXISTS products_active_order
     ON products (active, sort_order);
+
+  CREATE TABLE IF NOT EXISTS orders (
+    order_id TEXT PRIMARY KEY,
+    status TEXT NOT NULL CHECK (status IN ('pending', 'paid', 'failed')),
+    payment_id TEXT UNIQUE,
+    preference_id TEXT,
+    total INTEGER NOT NULL CHECK (total >= 0),
+    data TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS inventory_reservations (
+    order_id TEXT NOT NULL,
+    product_id TEXT NOT NULL,
+    quantity INTEGER NOT NULL CHECK (quantity > 0),
+    expires_at TEXT NOT NULL,
+    PRIMARY KEY (order_id, product_id),
+    FOREIGN KEY (order_id) REFERENCES orders(order_id),
+    FOREIGN KEY (product_id) REFERENCES products(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS inventory_movements (
+    order_id TEXT NOT NULL,
+    product_id TEXT NOT NULL,
+    quantity INTEGER NOT NULL CHECK (quantity > 0),
+    PRIMARY KEY (order_id, product_id),
+    FOREIGN KEY (order_id) REFERENCES orders(order_id),
+    FOREIGN KEY (product_id) REFERENCES products(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS payment_events (
+    payment_id TEXT PRIMARY KEY,
+    order_id TEXT NOT NULL,
+    status TEXT NOT NULL,
+    received_at TEXT NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES orders(order_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS order_fulfillment (
+    order_id TEXT PRIMARY KEY,
+    status TEXT NOT NULL CHECK (status IN (
+      'awaiting_confirmation', 'preparing', 'dispatched', 'delivered'
+    )),
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES orders(order_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS order_audit (
+    id INTEGER PRIMARY KEY,
+    order_id TEXT NOT NULL,
+    previous_status TEXT NOT NULL,
+    next_status TEXT NOT NULL CHECK (next_status IN (
+      'awaiting_confirmation', 'preparing', 'dispatched', 'delivered'
+    )),
+    changed_at TEXT NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES orders(order_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS email_notifications (
+    id INTEGER PRIMARY KEY,
+    order_id TEXT NOT NULL,
+    event TEXT NOT NULL CHECK (event IN ('seller_request', 'seller_payment_approved', 'customer_payment_approved')),
+    status TEXT NOT NULL CHECK (status IN ('disabled', 'queued')),
+    created_at TEXT NOT NULL,
+    UNIQUE (order_id, event),
+    FOREIGN KEY (order_id) REFERENCES orders(order_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS order_admin_events (
+    id INTEGER PRIMARY KEY,
+    order_id TEXT NOT NULL,
+    event TEXT NOT NULL,
+    changed_at TEXT NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES orders(order_id)
+  );
+
+  CREATE INDEX IF NOT EXISTS inventory_reservations_expiry
+    ON inventory_reservations (expires_at);
+  CREATE INDEX IF NOT EXISTS orders_created_at
+    ON orders (created_at DESC);
+  CREATE INDEX IF NOT EXISTS order_audit_order_id
+    ON order_audit (order_id, changed_at DESC);
 `;
 
 const openDatabase = (databasePath) => {
@@ -55,11 +138,12 @@ const seedCatalog = (database, { categories, products }) => {
   });
 
   const replaceCatalog = database.transaction(() => {
-    database.prepare("DELETE FROM products").run();
-    database.prepare("DELETE FROM categories").run();
-
     const insertCategory = database.prepare(
-      "INSERT INTO categories (id, slug, sort_order, data) VALUES (?, ?, ?, ?)"
+      `INSERT INTO categories (id, slug, sort_order, data) VALUES (?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         slug = excluded.slug,
+         sort_order = excluded.sort_order,
+         data = excluded.data`
     );
     categories.forEach((category) => {
       insertCategory.run(
@@ -71,7 +155,9 @@ const seedCatalog = (database, { categories, products }) => {
     });
 
     const insertProduct = database.prepare(
-      "INSERT INTO products (id, slug, sku, category_id, active, sort_order, data) VALUES (?, ?, ?, ?, ?, ?, ?)"
+      `INSERT INTO products (id, slug, sku, category_id, active, sort_order, data)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO NOTHING`
     );
     products.forEach((product, index) => {
       insertProduct.run(
@@ -89,19 +175,411 @@ const seedCatalog = (database, { categories, products }) => {
   replaceCatalog();
 };
 
+const availableStock = (database, productId, now = new Date().toISOString()) => {
+  const row = database.prepare(
+    `SELECT p.data,
+      COALESCE((SELECT SUM(m.quantity) FROM inventory_movements m WHERE m.product_id = p.id), 0) AS sold,
+      COALESCE((SELECT SUM(r.quantity) FROM inventory_reservations r
+        WHERE r.product_id = p.id AND r.expires_at > ?), 0) AS reserved
+     FROM products p WHERE p.id = ? AND p.active = 1`
+  ).get(now, productId);
+  if (!row) return null;
+  const product = JSON.parse(row.data);
+  return Math.max(0, Number(product.stock) - row.sold - row.reserved);
+};
+
+const withAvailableStock = (database, row, now) => {
+  const product = JSON.parse(row.data);
+  product.stock = availableStock(database, product.id, now);
+  return product;
+};
+
 const listCategories = (database) => database.prepare(
   "SELECT data FROM categories ORDER BY sort_order, id"
 ).all().map((row) => JSON.parse(row.data));
 
-const listProducts = (database) => database.prepare(
+const listProducts = (database, now) => database.prepare(
   "SELECT data FROM products WHERE active = 1 ORDER BY sort_order, id"
-).all().map((row) => JSON.parse(row.data));
+).all().map((row) => withAvailableStock(database, row, now));
 
-const getProductBySlug = (database, slug) => {
+const getProductBySlug = (database, slug, now) => {
   const row = database.prepare(
     "SELECT data FROM products WHERE slug = ? AND active = 1"
   ).get(slug);
-  return row ? JSON.parse(row.data) : null;
+  return row ? withAvailableStock(database, row, now) : null;
+};
+
+const createPendingOrder = (database, order, reservationExpiry) => {
+  const create = database.transaction(() => {
+    database.prepare(
+      `UPDATE orders SET status = 'failed', updated_at = ?
+       WHERE status = 'pending' AND order_id IN (
+         SELECT order_id FROM inventory_reservations WHERE expires_at <= ?
+       )`
+    ).run(order.createdAt, order.createdAt);
+    database.prepare("DELETE FROM inventory_reservations WHERE expires_at <= ?")
+      .run(order.createdAt);
+    const requiredByProduct = new Map();
+    order.items.forEach((item) => {
+      requiredByProduct.set(item.productId, (requiredByProduct.get(item.productId) || 0) + item.qty);
+    });
+    requiredByProduct.forEach((quantity, productId) => {
+      const stock = availableStock(database, productId, order.createdAt);
+      if (stock == null) throw Object.assign(new Error("Uno de los productos ya no está disponible."), { status: 409 });
+      if (stock < quantity) {
+        throw Object.assign(new Error("No hay stock suficiente para completar el pedido."), { status: 409 });
+      }
+    });
+
+    database.prepare(
+      "INSERT INTO orders (order_id, status, total, data, created_at, updated_at) VALUES (?, 'pending', ?, ?, ?, ?)"
+    ).run(order.orderId, order.totals.total, JSON.stringify(order), order.createdAt, order.createdAt);
+    const reserve = database.prepare(
+      "INSERT INTO inventory_reservations (order_id, product_id, quantity, expires_at) VALUES (?, ?, ?, ?)"
+    );
+    requiredByProduct.forEach((quantity, productId) => {
+      reserve.run(order.orderId, productId, quantity, reservationExpiry);
+    });
+    if (order.payment && order.payment.provider === "whatsapp") {
+      database.prepare(
+        "INSERT OR IGNORE INTO email_notifications (order_id, event, status, created_at) VALUES (?, 'seller_request', 'disabled', ?)"
+      ).run(order.orderId, order.createdAt);
+    }
+  });
+  create();
+};
+
+const setPreferenceId = (database, orderId, preferenceId) => {
+  const result = database.prepare(
+    "UPDATE orders SET preference_id = ?, updated_at = ? WHERE order_id = ? AND status = 'pending'"
+  ).run(preferenceId, new Date().toISOString(), orderId);
+  return result.changes === 1;
+};
+
+const failPendingOrder = (database, orderId) => {
+  const fail = database.transaction(() => {
+    database.prepare(
+      "UPDATE orders SET status = 'failed', updated_at = ? WHERE order_id = ? AND status = 'pending'"
+    ).run(new Date().toISOString(), orderId);
+    database.prepare("DELETE FROM inventory_reservations WHERE order_id = ?").run(orderId);
+  });
+  fail();
+};
+
+const getOrder = (database, orderId) => {
+  const row = database.prepare(
+    "SELECT order_id, status, payment_id, total, data, created_at FROM orders WHERE order_id = ?"
+  ).get(orderId);
+  return row ? { ...row, data: JSON.parse(row.data) } : null;
+};
+
+const applyPayment = (database, payment) => {
+  const apply = database.transaction(() => {
+    const order = getOrder(database, payment.external_reference);
+    if (!order) throw Object.assign(new Error("El pedido asociado al pago no existe."), { status: 404 });
+    if (payment.currency_id !== "ARS" || Number(payment.transaction_amount) !== order.total) {
+      throw Object.assign(new Error("El pago no coincide con la moneda o el total del pedido."), { status: 409 });
+    }
+
+    const priorEvent = database.prepare(
+      "SELECT status, order_id FROM payment_events WHERE payment_id = ?"
+    ).get(String(payment.id));
+    if (priorEvent && priorEvent.status === payment.status && priorEvent.order_id === order.order_id) {
+      return { orderId: order.order_id, status: order.status, idempotent: true };
+    }
+    if (order.status === "paid") {
+      if (order.payment_id === String(payment.id)) {
+        return { orderId: order.order_id, status: "paid", idempotent: true };
+      }
+      throw Object.assign(new Error("El pedido ya fue pagado con otro pago."), { status: 409 });
+    }
+
+    const now = new Date().toISOString();
+    database.prepare(
+      `INSERT INTO payment_events (payment_id, order_id, status, received_at)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT(payment_id) DO UPDATE SET status = excluded.status, received_at = excluded.received_at`
+    ).run(String(payment.id), order.order_id, payment.status, now);
+
+    if (payment.status === "approved") {
+      const quantities = new Map();
+      order.data.items.forEach((item) => {
+        quantities.set(item.productId, (quantities.get(item.productId) || 0) + item.qty);
+      });
+      const ownReservations = database.prepare(
+        "SELECT quantity FROM inventory_reservations WHERE order_id = ? AND product_id = ?"
+      );
+      const insertMovement = database.prepare(
+        "INSERT INTO inventory_movements (order_id, product_id, quantity) VALUES (?, ?, ?)"
+      );
+      quantities.forEach((quantity, productId) => {
+        const reservation = ownReservations.get(order.order_id, productId);
+        const reserved = reservation ? reservation.quantity : 0;
+        const remaining = availableStock(database, productId, now);
+        if (remaining == null || remaining + reserved < quantity) {
+          throw Object.assign(new Error("El stock cambió antes de confirmar el pago."), { status: 409 });
+        }
+        insertMovement.run(order.order_id, productId, quantity);
+      });
+      database.prepare(
+        "UPDATE orders SET status = 'paid', payment_id = ?, updated_at = ? WHERE order_id = ?"
+      ).run(String(payment.id), now, order.order_id);
+      database.prepare("DELETE FROM inventory_reservations WHERE order_id = ?").run(order.order_id);
+      database.prepare(
+        "INSERT OR IGNORE INTO email_notifications (order_id, event, status, created_at) VALUES (?, ?, 'disabled', ?)"
+      ).run(order.order_id, "seller_payment_approved", now);
+      database.prepare(
+        "INSERT OR IGNORE INTO email_notifications (order_id, event, status, created_at) VALUES (?, ?, 'disabled', ?)"
+      ).run(order.order_id, "customer_payment_approved", now);
+      return { orderId: order.order_id, status: "paid", idempotent: false };
+    }
+
+    if (["rejected", "cancelled", "refunded", "charged_back"].includes(payment.status)) {
+      database.prepare(
+        "UPDATE orders SET status = 'failed', payment_id = ?, updated_at = ? WHERE order_id = ?"
+      ).run(String(payment.id), now, order.order_id);
+      database.prepare("DELETE FROM inventory_reservations WHERE order_id = ?").run(order.order_id);
+      return { orderId: order.order_id, status: "failed", idempotent: false };
+    }
+
+    return { orderId: order.order_id, status: "pending", idempotent: false };
+  });
+  return apply();
+};
+
+const getPublicOrder = (database, orderId) => {
+  const order = getOrder(database, orderId);
+  if (!order) return null;
+  return {
+    orderId: order.order_id,
+    status: order.status,
+    total: order.total,
+    currency: "ARS",
+    createdAt: order.created_at,
+    items: order.data.items.map((item) => ({
+      productId: item.productId,
+      name: item.name,
+      qty: item.qty,
+      unitPrice: item.unitPrice,
+      variants: item.variants
+    })),
+    shipping: {
+      method: order.data.shipping.method,
+      label: order.data.shipping.label,
+      cost: order.data.shipping.cost
+    }
+  };
+};
+
+const fulfillmentTransitions = {
+  awaiting_confirmation: ["preparing"],
+  preparing: ["awaiting_confirmation", "dispatched"],
+  dispatched: ["preparing", "delivered"],
+  delivered: []
+};
+
+const listAdminOrders = (database, limit = 50, offset = 0) => database.prepare(
+  `SELECT o.order_id, o.status AS payment_status, o.total, o.data,
+      o.created_at, o.updated_at,
+      COALESCE(f.status, 'awaiting_confirmation') AS fulfillment_status,
+      COALESCE(f.updated_at, o.created_at) AS fulfillment_updated_at
+   FROM orders o
+   LEFT JOIN order_fulfillment f ON f.order_id = o.order_id
+   ORDER BY o.created_at DESC, o.order_id DESC
+   LIMIT ? OFFSET ?`
+).all(limit, offset).map((row) => {
+  const data = JSON.parse(row.data);
+  return {
+    orderId: row.order_id,
+    paymentStatus: row.payment_status,
+    paymentProvider: data.payment && data.payment.provider || "mercadopago",
+    paymentMethod: data.payment && data.payment.method || "mercadopago",
+    reservationExpiresAt: data.reservationExpiresAt || null,
+    fulfillmentStatus: row.fulfillment_status,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    fulfillmentUpdatedAt: row.fulfillment_updated_at,
+    total: row.total,
+    items: data.items.map((item) => ({
+      name: item.name,
+      qty: item.qty,
+      variants: item.variants
+    })),
+    customer: {
+      name: data.customer.name,
+      email: data.customer.email,
+      phone: data.customer.phone
+    },
+    shipping: {
+      method: data.shipping.method,
+      label: data.shipping.label,
+      address: data.shipping.address,
+      city: data.shipping.city,
+      province: data.shipping.province,
+      postalCode: data.shipping.postalCode,
+      notes: data.shipping.notes
+    }
+  };
+});
+
+const updateOrderFulfillment = (database, orderId, nextStatus, now = new Date().toISOString()) => {
+  if (!Object.hasOwn(fulfillmentTransitions, nextStatus)) {
+    throw Object.assign(new Error("El estado operativo no es válido."), { status: 400 });
+  }
+  const update = database.transaction(() => {
+    const row = database.prepare(
+      `SELECT o.status AS payment_status,
+          COALESCE(f.status, 'awaiting_confirmation') AS fulfillment_status
+       FROM orders o LEFT JOIN order_fulfillment f ON f.order_id = o.order_id
+       WHERE o.order_id = ?`
+    ).get(orderId);
+    if (!row) return null;
+    if (row.payment_status !== "paid") {
+      throw Object.assign(new Error("Solo se pueden preparar pedidos con pago aprobado."), { status: 409 });
+    }
+    if (row.fulfillment_status === nextStatus) {
+      return { orderId, status: nextStatus, idempotent: true };
+    }
+    if (!fulfillmentTransitions[row.fulfillment_status].includes(nextStatus)) {
+      throw Object.assign(new Error("No se permite ese cambio de estado operativo."), { status: 409 });
+    }
+    database.prepare(
+      `INSERT INTO order_fulfillment (order_id, status, updated_at) VALUES (?, ?, ?)
+       ON CONFLICT(order_id) DO UPDATE SET status = excluded.status, updated_at = excluded.updated_at`
+    ).run(orderId, nextStatus, now);
+    database.prepare(
+      "INSERT INTO order_audit (order_id, previous_status, next_status, changed_at) VALUES (?, ?, ?, ?)"
+    ).run(orderId, row.fulfillment_status, nextStatus, now);
+    return { orderId, status: nextStatus, idempotent: false };
+  });
+  return update();
+};
+
+const cancelWhatsappOrder = (database, orderId, now = new Date().toISOString()) => {
+  const cancel = database.transaction(() => {
+    const row = database.prepare("SELECT status, data FROM orders WHERE order_id = ?").get(orderId);
+    if (!row) return null;
+    const order = JSON.parse(row.data);
+    if (!order.payment || order.payment.provider !== "whatsapp") {
+      throw Object.assign(new Error("Solo se pueden liberar reservas de pedidos por WhatsApp."), { status: 409 });
+    }
+    if (row.status !== "pending") {
+      throw Object.assign(new Error("El pedido ya no tiene una reserva pendiente."), { status: 409 });
+    }
+    database.prepare(
+      "UPDATE orders SET status = 'failed', updated_at = ? WHERE order_id = ? AND status = 'pending'"
+    ).run(now, orderId);
+    database.prepare("DELETE FROM inventory_reservations WHERE order_id = ?").run(orderId);
+    database.prepare(
+      "INSERT INTO order_admin_events (order_id, event, changed_at) VALUES (?, 'whatsapp_reservation_released', ?)"
+    ).run(orderId, now);
+    return { orderId, status: "failed", idempotent: false };
+  });
+  return cancel();
+};
+
+const listCatalogProductsForAdmin = (database) => database.prepare(
+  "SELECT id, slug, sku, category_id, active, sort_order, data FROM products ORDER BY sort_order, id"
+).all().map((row) => {
+  const product = JSON.parse(row.data);
+  const sold = database.prepare(
+    "SELECT COALESCE(SUM(quantity), 0) AS quantity FROM inventory_movements WHERE product_id = ?"
+  ).get(row.id).quantity;
+  return {
+    ...product,
+    active: Boolean(row.active),
+    stock: Math.max(0, Number(product.stock) - sold)
+  };
+});
+
+const validateCatalogProducts = (database, products) => {
+  const existing = new Map(database.prepare("SELECT id, sku, slug FROM products").all()
+    .flatMap((row) => [[row.id, row], [row.sku, row]]));
+  const existingBySlug = new Map(database.prepare("SELECT id, slug FROM products").all()
+    .map((row) => [row.slug, row.id]));
+  const ids = new Set();
+  const skus = new Set();
+  const slugs = new Set();
+  let added = 0;
+  let updated = 0;
+  products.forEach((product) => {
+    if (ids.has(product.id) || skus.has(product.sku) || slugs.has(product.slug)) {
+      throw Object.assign(new Error(`El CSV duplica el ID, slug o SKU "${product.sku}".`), { status: 400 });
+    }
+    ids.add(product.id);
+    skus.add(product.sku);
+    slugs.add(product.slug);
+    const old = existing.get(product.id);
+    const oldSku = existing.get(product.sku);
+    const slugOwner = existingBySlug.get(product.slug);
+    if ((old && old.sku !== product.sku) || (oldSku && oldSku.id !== product.id) ||
+        (slugOwner && slugOwner !== product.id)) {
+      throw Object.assign(new Error(`El ID, slug o SKU de "${product.name}" ya pertenece a otro producto.`), { status: 409 });
+    }
+    if (!database.prepare("SELECT 1 FROM categories WHERE id = ?").get(product.category)) {
+      throw Object.assign(new Error(`La categoría "${product.category}" no existe.`), { status: 400 });
+    }
+    const reserved = old
+      ? database.prepare(
+        "SELECT COALESCE(SUM(quantity), 0) AS quantity FROM inventory_reservations WHERE product_id = ? AND expires_at > ?"
+      ).get(product.id, new Date().toISOString()).quantity
+      : 0;
+    if (product.stock < reserved) {
+      throw Object.assign(new Error(`El stock de "${product.name}" no puede ser menor que las unidades reservadas (${reserved}).`), { status: 409 });
+    }
+    if (!Array.isArray(product.variants) || product.variants.some((variant) =>
+      !variant || typeof variant.id !== "string" || typeof variant.label !== "string" ||
+      !Array.isArray(variant.options) || variant.options.some((option) => typeof option !== "string"))) {
+      throw Object.assign(new Error(`Las variantes de "${product.name}" no tienen un formato válido.`), { status: 400 });
+    }
+    if (!Array.isArray(product.specs) || product.specs.some((spec) =>
+      !spec || typeof spec.label !== "string" || typeof spec.value !== "string")) {
+      throw Object.assign(new Error(`Las especificaciones de "${product.name}" no tienen un formato válido.`), { status: 400 });
+    }
+    if (typeof product.createdAt !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(product.createdAt) ||
+        typeof product.description !== "string" || product.description.length > 20000 ||
+        typeof product.shortDescription !== "string" || product.shortDescription.length > 500 ||
+        !Array.isArray(product.images) || product.images.length < 1 || product.images.length > 20 ||
+        product.images.some((image) => typeof image !== "string" || image.length > 500 ||
+          image.includes("\\") || /^javascript:/i.test(image) || /^data:/i.test(image) ||
+          image.split("/").includes("..")) ||
+        !Array.isArray(product.tags) || product.tags.some((tag) => typeof tag !== "string" || tag.length > 40)) {
+      throw Object.assign(new Error(`La fecha, descripción, imágenes o etiquetas de "${product.name}" exceden el formato permitido.`), { status: 400 });
+    }
+    if (old) updated += 1;
+    else added += 1;
+  });
+  return { added, updated };
+};
+
+const importCatalogProducts = (database, products) => {
+  const importProducts = database.transaction(() => {
+    const { added, updated } = validateCatalogProducts(database, products);
+    const upsert = database.prepare(
+      `INSERT INTO products (id, slug, sku, category_id, active, sort_order, data)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         slug = excluded.slug,
+         sku = excluded.sku,
+         category_id = excluded.category_id,
+         active = excluded.active,
+         sort_order = excluded.sort_order,
+         data = excluded.data`
+    );
+    products.forEach((product, index) => {
+      const existing = database.prepare("SELECT data FROM products WHERE id = ?").get(product.id);
+      const oldData = existing ? JSON.parse(existing.data) : {};
+      const sold = existing
+        ? database.prepare(
+          "SELECT COALESCE(SUM(quantity), 0) AS quantity FROM inventory_movements WHERE product_id = ?"
+        ).get(product.id).quantity
+        : 0;
+      const next = { ...oldData, ...product, stock: product.stock + sold };
+      upsert.run(next.id, next.slug, next.sku, next.category, next.active ? 1 : 0, index, JSON.stringify(next));
+    });
+    return { added, updated };
+  });
+  return importProducts();
 };
 
 module.exports = {
@@ -109,5 +587,17 @@ module.exports = {
   seedCatalog,
   listCategories,
   listProducts,
-  getProductBySlug
+  getProductBySlug,
+  availableStock,
+  createPendingOrder,
+  setPreferenceId,
+  failPendingOrder,
+  applyPayment,
+  getPublicOrder,
+  listAdminOrders,
+  updateOrderFulfillment,
+  cancelWhatsappOrder,
+  listCatalogProductsForAdmin,
+  importCatalogProducts,
+  validateCatalogProducts
 };

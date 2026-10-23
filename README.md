@@ -7,6 +7,7 @@ Tienda estática hecha con HTML, CSS y JavaScript. No requiere instalar programa
 - [Abrir y probar la tienda](#abrir-y-probar-la-tienda)
 - [Archivos y carpetas principales](#archivos-y-carpetas-principales)
 - [Editar productos](#editar-productos)
+- [Administrar catálogo con CSV](#administrar-catálogo-con-csv)
 - [Cambiar fotos](#cambiar-fotos)
 - [Editar categorías](#editar-categorías)
 - [Cambiar datos del negocio](#cambiar-datos-del-negocio)
@@ -98,6 +99,16 @@ El bloque debe llevar coma si hay otro producto después. En JavaScript, textos 
 
 Las variantes mostradas en la ficha son opciones del producto; el inventario se gestiona en el campo general `stock`, no por variante.
 
+## Administrar catálogo con CSV
+
+Cuando el backend esté publicado y `ADMIN_PASSWORD` configurada, ingresá a `https://<api-host>/admin`. El panel permite descargar el catálogo completo y cargar un CSV con previsualización: primero valida encabezados, filas, identificadores, categorías, importes, stock e imágenes; una segunda confirmación aplica los cambios en una transacción. Un CSV inválido no aplica parcialmente filas. Los productos omitidos no se borran ni se modifican; para ocultar uno, poné `active=false`.
+
+El CSV exportado es la plantilla oficial y contiene estas columnas en este orden: `id, sku, slug, name, category, subcategory, price, stock, active, comparePrice, images, shortDescription, description, specs, variants, tags, featured, createdAt`. Mantené todas las columnas. `images` y `tags` se separan con `|`; `specs` y `variants` se escriben como JSON válido en la celda. Usá comillas CSV para celdas con comas, saltos de línea o comillas. Para un producto nuevo se puede dejar `id` y `slug` vacíos: el servidor los genera a partir del SKU y el nombre. Los SKU existentes identifican actualizaciones; el SKU no se puede cambiar desde una fila que ya corresponde a otro ID.
+
+`stock` representa las unidades físicas que quedan luego de ventas completadas e incluye las que estén temporalmente reservadas. El stock que ve el cliente descuenta además las reservas activas. Así, descargar y volver a subir el mismo archivo no vuelve a descontar ventas ni reserva stock dos veces. Al importar, no se permite bajar el inventario por debajo de una reserva activa. Las variantes son descriptivas; no existe inventario independiente por variante.
+
+Con el backend aún sin publicar, el catálogo del sitio sigue usando los archivos JavaScript estáticos. Cuando se configure la API, el catálogo remoto de SQLite pasa a ser la fuente de productos, precios y stock para inicio, tienda, ficha, carrito y checkout. La base conserva las modificaciones administrativas en reinicios; el catálogo local solo se usa como semilla inicial y como alternativa cuando no se configuró una URL de API.
+
 ## Cambiar fotos
 
 Las rutas que usa la tienda están escritas en `images` de cada producto. Copiar una foto a la carpeta **no** cambia por sí solo la ruta ni reemplaza automáticamente el SVG.
@@ -130,7 +141,7 @@ Los precios de productos y costos de envío se escriben como números enteros en
 
 ## Publicar la tienda
 
-La versión actual no necesita un servidor propio ni un comando de compilación. Publicá **el contenido de esta carpeta** como raíz del sitio —incluidos `index.html`, `404.html`, `css/`, `js/`, `img/` y `assets/`—; no publiques solo los HTML.
+La tienda en su configuración predeterminada de WhatsApp no necesita un servidor propio ni un comando de compilación. Mercado Pago TEST requiere además publicar y configurar el backend que se describe más abajo. Publicá **el contenido de esta carpeta** como raíz del sitio —incluidos `index.html`, `404.html`, `css/`, `js/`, `img/` y `assets/`—; no publiques solo los HTML.
 
 ### Opción A: Netlify Drop
 
@@ -151,30 +162,55 @@ Un despliegue manual puede requerir volver a subir la carpeta cada vez que cambi
 
 El sitio usa rutas relativas y está preparado para hosting estático y apertura local. En cualquier proveedor, verificá que las rutas de páginas, imágenes, estilos y scripts carguen bien en la URL pública, especialmente si se publica dentro de una subcarpeta.
 
-## API del catálogo — inicio de Fase 2
+## API de catálogo y pagos — backend Fase 2
 
-La API inicial está en `server/`, separada de la tienda estática. Requiere Node.js 20 o posterior.
+El backend está en `server/`, separado de la tienda estática. Requiere Node.js 20 o posterior.
 
 1. Abrí una terminal dentro de la carpeta `server/`.
-2. Ejecutá `npm install` para instalar Express y SQLite.
-3. Ejecutá `npm start`.
-4. Abrí `http://localhost:3000/api/health`. Una respuesta correcta indica `"status": "ok"` y `"database": "ok"`.
-5. Abrí `http://localhost:3000/api/products` para consultar las categorías y productos activos, o `http://localhost:3000/api/products/set-ollas-antiadherente-8-piezas` para consultar una ficha.
-6. Para ejecutar las pruebas automatizadas, abrí otra terminal en `server/` y ejecutá `npm test`.
+2. Ejecutá `npm install` para instalar las dependencias, incluidos Express, SQLite y el SDK de Mercado Pago.
+3. Copiá `server/.env.example` a `server/.env`. Ajustá `PORT`, `FRONTEND_URL`, `PUBLIC_API_URL` y `CORS_ORIGIN` al entorno de prueba. `ORDER_RESERVATION_MINUTES` vale 30 por defecto.
+4. Para Mercado Pago TEST, cargá `MP_ACCESS_TOKEN` con un Access Token que empiece con `TEST-` y `MP_WEBHOOK_SECRET` con la firma secreta de Webhooks de esa aplicación, obtenidos por el titular desde Mercado Pago. Guardalos solo en `server/.env`; nunca los compartas por chat ni los copies a `js/config.js`, HTML o el repositorio.
+5. Para conectar el catálogo y registrar/reservar pedidos coordinados por WhatsApp, configurá `payments.apiBaseUrl` en `js/config.js` con la URL HTTPS de la API y mantené `payments.provider` en `"whatsapp"`. Para probar Mercado Pago, además cambiá el proveedor a `"mercadopago"` y configurá credenciales TEST y webhook.
+6. Publicá una versión de prueba del frontend con HTTPS. Para el webhook, `PUBLIC_API_URL` debe ser una URL HTTPS públicamente accesible del backend (por ejemplo, un entorno de prueba o túnel HTTPS); `localhost` no puede recibir avisos de Mercado Pago.
+7. Ejecutá `npm start` desde `server/`. Comprobá `/api/health` y `/api/products`; luego probá un pedido usando únicamente el sandbox de Mercado Pago y un usuario/medio de pago de prueba.
+8. Ejecutá `npm test` desde `server/` para correr las pruebas automatizadas. Estas usan un gateway simulado y no realizan cobros.
 
-La API crea `server/data/catalog.sqlite` y sincroniza el catálogo inicial desde `js/data/categories.js` y `js/data/products.js` al iniciar. Los cambios hechos a esos archivos se reflejan en la base al reiniciar el servicio. La carpeta `server/data/` es local y no se sube al repositorio.
+El backend crea `server/data/orders.sqlite`. Las categorías se sincronizan desde `js/data/categories.js`; los productos de esos archivos se insertan solo si todavía no existen, para que no se pierdan los cambios CSV al reiniciar. Los pedidos, movimientos y reservas se mantienen en SQLite. La carpeta `server/data/` no se sube al repositorio.
 
-La configuración es opcional: `PORT` (3000 por defecto), `DB_PATH` (`./data/catalog.sqlite`) y `CORS_ORIGIN` (lista separada por comas; vacía por defecto). Si necesitás cambiarla, copiá `server/.env.example` a `server/.env` y editá ese archivo. No agregues tokens ni contraseñas: pagos y credenciales quedan fuera del alcance de este backend base.
+Configuración del servidor: `PORT` (3000 por defecto), `DB_PATH` (`./data/orders.sqlite`), `NODE_ENV`, `TRUST_PROXY_HOPS` (0 por defecto; número de proxies de confianza del hosting), `FRONTEND_URL`, `PUBLIC_API_URL`, `CORS_ORIGIN` (orígenes permitidos separados por comas), `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `ADMIN_PASSWORD` y `ORDER_RESERVATION_MINUTES` (30 por defecto; acepta de 1 a 1440). `BASE_URL` solo se admite como alias anterior de `PUBLIC_API_URL`. `MP_ACCESS_TOKEN` debe ser de prueba (`TEST-`); el servidor rechaza tokens de producción. Para crear preferencias también se exige configurar el secreto del webhook. No agregues secretos a archivos del frontend.
+
+Rutas disponibles: `GET /api/health`, `GET /api/products`, `GET /api/products/:slug`, `POST /api/orders/whatsapp`, `POST /api/checkout`, `POST /api/webhooks/mercadopago` y `GET /api/orders/:id`. El servidor obtiene precios, zonas, descuentos y stock desde su catálogo/configuración; no confía en los precios ni los totales del navegador. Cuando está conectado al backend, cada solicitud de WhatsApp se registra y reserva stock por 30 minutos; el panel permite cancelar la solicitud y liberar esa reserva. Mercado Pago también reserva inventario, verifica la firma `x-signature` del webhook con el SDK oficial y consulta el pago antes de aplicar cambios. No se fija una antigüedad máxima de firma para no descartar reintentos legítimos; los pagos se consultan en la API y se procesan idempotentemente. El estado público del pedido no expone email, DNI, teléfono ni dirección.
+
+Los avisos de correo todavía no se envían: el proveedor/remitente está pendiente de elección. El servidor registra internamente los eventos previstos, con estado `disabled`: aviso al vendedor al crear un pedido WhatsApp, aviso al vendedor tras un pago aprobado y confirmación al comprador solo tras un pago aprobado. No se requiere ni se guarda una credencial de correo hasta elegir el proveedor y activar una implementación de envío.
+
+### Preparación de despliegue del backend (Render u otro host)
+
+La aplicación valida la configuración al arrancar con `NODE_ENV=production`: exige URLs HTTPS para el frontend y la API, que CORS incluya el origen del frontend, una ruta absoluta para SQLite en disco persistente y, si se configura el token TEST, también el secreto del webhook. Rechaza credenciales de Mercado Pago que no empiecen con `TEST-`; la integración no admite cobros reales.
+
+En Render, por ejemplo:
+
+1. Creá un servicio web desde la carpeta `server/`, con `npm install` como comando de instalación y `npm start` como inicio. Usá una versión de Node compatible (20 o posterior).
+2. Asociá un disco persistente montado en `/var/data` y definí `DB_PATH=/var/data/orders.sqlite`. Sin almacenamiento persistente, pedidos y reservas podrían perderse al reiniciar o desplegar.
+3. Configurá como variables privadas `NODE_ENV=production`, `TRUST_PROXY_HOPS=1` (si el host usa un único proxy de confianza), `FRONTEND_URL` (origen HTTPS exacto del sitio), `PUBLIC_API_URL` (URL HTTPS pública de la API), `CORS_ORIGIN` (origen del sitio, sin rutas), y, para activar Mercado Pago TEST, `MP_ACCESS_TOKEN` y `MP_WEBHOOK_SECRET` de la misma aplicación de pruebas.
+4. En el panel de desarrolladores de Mercado Pago, configurá la URL de Webhooks de prueba como `PUBLIC_API_URL` + `/api/webhooks/mercadopago`, habilitá eventos de pago, y guardá el secreto generado como `MP_WEBHOOK_SECRET`. El backend debe ser públicamente accesible por HTTPS para recibir avisos.
+5. Para habilitar el panel privado de pedidos, configurá `ADMIN_PASSWORD` como variable secreta del hosting; usá una contraseña aleatoria larga (al menos 16 caracteres) y guardala también en un gestor de contraseñas. Sin esa variable, `/admin` y sus rutas API devuelven `404`. En Render, configurá `TRUST_PROXY_HOPS=1` para que el backend identifique correctamente el proxy HTTPS y limite los intentos fallidos por IP. La sesión del panel dura una hora; cerrar sesión la invalida.
+6. Abrí `https://<api-host>/admin` para iniciar sesión. El panel lista pedidos almacenados en el backend, muestra contacto/dirección (no DNI), permite cambios auditados en el estado operativo de pagos aprobados y cancelar solicitudes WhatsApp para liberar stock. No altera pagos ni emite reembolsos.
+7. Desplegá el frontend estático por separado. Configurá `payments.apiBaseUrl` para conectar el catálogo remoto y registrar reservas por WhatsApp. Dejá `payments.provider` en `"whatsapp"` hasta validar URL, CORS, token TEST, secreto y webhook; luego podés configurar `"mercadopago"` para probar.
+8. Confirmá `/api/health`, el catálogo y un flujo sandbox completo: pago aprobado, rechazado/pendiente, retorno a gracias, consulta de estado y reintento del mismo webhook. No uses cuentas ni medios de pago reales.
+
+El archivo SQLite local está pensado para una sola instancia del backend con disco persistente. No habilites réplicas múltiples ni despliegues simultáneos que compartan ese archivo; para escalar, primero se debe migrar a una base de datos administrada compatible. El registro de auditoría del panel guarda cada cambio operativo con hora y estado anterior/nuevo, sin copiar datos del cliente.
+
+Esta guía prepara un despliegue de prueba con configuración reforzada, no autoriza ni habilita producción de pagos. La clave privada y el código solo admiten modo TEST y la URL sandbox. La prueba de extremo a extremo con Mercado Pago requiere credenciales/usuario de prueba y un dominio del titular, que aún no están configurados; no se debe anunciar como completada hasta realizarla.
 
 ## Límites importantes de esta versión
 
-- El pedido se prepara para que el cliente lo envíe por WhatsApp. **No se envía automáticamente ni se cobra en la web**; el cliente debe revisar y enviar el mensaje y CIMA confirmar el pedido.
-- No hay panel de administración, base de datos ni sistema para que CIMA reciba pedidos en un tablero. El comprobante de referencia se guarda localmente en el navegador del cliente.
-- El carrito persiste en el navegador; los datos personales del checkout no se guardan allí. Se incorporan al mensaje de WhatsApp cuando el cliente continúa por ese canal.
+- En la configuración inicial el checkout sigue usando WhatsApp. Al activar `"mercadopago"`, la compra se procesa solo en modo de prueba hasta completar la preparación y autorización de producción; no cargues datos reales.
+- En el modo Mercado Pago (TEST), el pedido y los datos necesarios de contacto/entrega se guardan en SQLite del servidor y se envían al proveedor para crear la preferencia. Si `payments.apiBaseUrl` está configurada, los pedidos WhatsApp también se registran en SQLite antes de abrir el enlace y conservan una reserva temporal; sin API configurada sigue disponible el flujo directo heredado, sin reserva central. El comprobante local no guarda datos personales.
+- El panel de administración es opcional y solo muestra pedidos registrados en el backend. El estado de pago de una coordinación WhatsApp no se verifica automáticamente; Mercado Pago se confirma mediante webhook.
 - Los precios, cuotas, descuentos, stock y costos de entrega son datos configurados y deben mantenerse actualizados. Las tarifas de envío se confirman al coordinar el pedido.
 - Los textos de términos, privacidad, envíos y devoluciones, y arrepentimiento son **plantillas base**, no asesoramiento legal. Antes de publicar o aceptar pedidos, el titular debe validarlos con su contador o abogado y completar los datos comerciales y legales que correspondan.
-- No hay pagos Mercado Pago activos en esta fase. Nunca publiques credenciales de pago en archivos del sitio.
-- La API nueva solo expone salud y catálogo de lectura; aún no crea pedidos, cobra pagos ni se conecta automáticamente con las páginas estáticas.
+- Nunca publiques credenciales de pago ni cambies a credenciales de producción sin autorización expresa del titular.
+- Antes de aceptar pagos reales, se deben revisar la política de privacidad, la conservación de datos, la seguridad del webhook y la configuración de producción. El soporte de credenciales reales no está implementado y requiere autorización expresa del titular.
 
 ## Antes de publicar: checklist
 
@@ -183,7 +219,7 @@ La configuración es opcional: `PORT` (3000 por defecto), `DB_PATH` (`./data/cat
 - [ ] Cambiar placeholders por fotos correctas y comprobar cada ruta.
 - [ ] Revisar textos legales con un profesional y completar los datos que faltan.
 - [ ] Abrir las páginas principales, probar catálogo y filtros, carrito y checkout.
-- [ ] Hacer un pedido de prueba hasta el paso de WhatsApp; confirmar que el mensaje sea correcto y no enviarlo como pedido real.
+- [ ] Probar WhatsApp o, si se habilitó Mercado Pago, completar el flujo solo con credenciales y medios de pago TEST.
 - [ ] Probar la web publicada desde teléfono y computadora; corregir enlaces, imágenes o páginas que fallen.
 - [ ] Definir y probar un medio de contacto para recibir y responder las solicitudes.
 

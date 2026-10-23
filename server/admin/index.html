@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow, noarchive">
+    <title>Pedidos — Administración CIMA</title>
+    <link rel="stylesheet" href="/admin/admin.css">
+    <script src="/admin/admin.js" defer></script>
+  </head>
+  <body>
+    <main class="admin-shell">
+      <header class="admin-header">
+        <div>
+          <p class="eyebrow">CIMA · administración privada</p>
+          <h1>Administración de CIMA</h1>
+        </div>
+        <button class="button button--secondary" type="button" data-logout hidden>Cerrar sesión</button>
+      </header>
+
+      <section class="login-panel" data-login-panel aria-labelledby="login-title">
+        <h2 id="login-title">Ingresar</h2>
+        <p>Acceso reservado al titular de la tienda.</p>
+        <form data-login-form>
+          <label for="admin-password">Contraseña de administración</label>
+          <input id="admin-password" name="password" type="password" autocomplete="current-password" required maxlength="256">
+          <button class="button button--primary" type="submit">Iniciar sesión</button>
+        </form>
+        <p class="message" data-login-message role="alert" hidden></p>
+      </section>
+
+      <section class="orders-panel" data-orders-panel hidden aria-labelledby="orders-title">
+        <section class="catalog-panel" aria-labelledby="catalog-title">
+          <div>
+            <h2 id="catalog-title">Catálogo e inventario</h2>
+            <p>Descargá el CSV actual, editá precios, stock y productos, y volvé a importarlo. La importación valida todo antes de aplicar los cambios.</p>
+          </div>
+          <a class="button button--secondary" href="/api/admin/catalog.csv">Descargar catálogo CSV</a>
+          <form data-catalog-form>
+            <label for="catalog-file">Archivo CSV actualizado</label>
+            <input id="catalog-file" name="catalog" type="file" accept=".csv,text/csv" required>
+            <button class="button button--primary" type="submit">Validar e importar</button>
+          </form>
+          <p class="message" data-catalog-message role="status" aria-live="polite" hidden></p>
+        </section>
+        <div class="orders-toolbar">
+          <div>
+            <h2 id="orders-title">Pedidos recientes</h2>
+            <p>Los pagos se verifican en Mercado Pago. Desde aquí solo se actualiza el estado de preparación y entrega.</p>
+          </div>
+          <button class="button button--secondary" type="button" data-refresh>Actualizar</button>
+        </div>
+        <p class="message" data-orders-message role="status" aria-live="polite" hidden></p>
+        <div class="orders-list" data-orders-list aria-live="polite"></div>
+        <button class="button button--secondary load-more" type="button" data-load-more hidden>Cargar más pedidos</button>
+      </section>
+      <noscript>Este panel necesita JavaScript habilitado.</noscript>
+    </main>
+  </body>
+</html>

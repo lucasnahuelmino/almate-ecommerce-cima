@@ -22,10 +22,12 @@
   <script defer src="js/core/utils.js"></script>
   <script defer src="js/data/categories.js"></script>
   <script defer src="js/data/products.js"></script>
+  <script defer src="js/core/catalog-source.js"></script>
   <script defer src="js/core/cart.js"></script>
   <script defer src="js/core/orders.js"></script>
   <script defer src="js/payments/provider.js"></script>
   <script defer src="js/payments/whatsapp.js"></script>
+  <script defer src="js/payments/mercadopago.js"></script>
   <script defer src="js/pages/checkout.js"></script>
   <script defer src="js/ui/layout.js"></script>
   <script defer src="js/ui/header.js"></script>
@@ -63,7 +65,7 @@
       <header class="cart-page__header">
         <p class="eyebrow">Un último paso</p>
         <h1 id="checkout-title">Finalizar pedido</h1>
-        <p>Completá tus datos. El pedido se coordina personalmente por WhatsApp; todavía no se realiza ningún cobro en esta página.</p>
+        <p data-checkout-intro>Completá tus datos. El pedido se coordina personalmente por WhatsApp; todavía no se realiza ningún cobro en esta página.</p>
       </header>
       <section class="cart-empty" data-checkout-empty hidden>
         <h2>Tu carrito está vacío</h2>
@@ -95,16 +97,17 @@
           </fieldset>
           <fieldset class="checkout-section" data-checkout-payments>
             <legend><span class="checkout-step">3</span> Forma de pago</legend>
-            <label class="checkout-choice"><input type="radio" name="payment" value="whatsapp" data-whatsapp-payment checked><span><strong>Coordinar por WhatsApp</strong><small>Te confirmamos las opciones disponibles.</small></span></label>
-            <label class="checkout-choice"><input type="radio" name="payment" value="transfer" data-transfer-payment disabled><span><strong>Transferencia bancaria <span data-transfer-discount-label></span></strong><small>El descuento se aplica al subtotal. Los datos para transferir se coordinan por WhatsApp.</small></span></label>
+            <label class="checkout-choice" data-whatsapp-payment-option><input type="radio" name="payment" value="whatsapp" data-whatsapp-payment checked><span><strong>Coordinar por WhatsApp</strong><small>Te confirmamos las opciones disponibles.</small></span></label>
+            <label class="checkout-choice" data-transfer-payment-option><input type="radio" name="payment" value="transfer" data-transfer-payment disabled><span><strong>Transferencia bancaria <span data-transfer-discount-label></span></strong><small>El descuento se aplica al subtotal. Los datos para transferir se coordinan por WhatsApp.</small></span></label>
+            <label class="checkout-choice" data-mercadopago-payment-option hidden><input type="radio" name="payment" value="mercadopago" data-mercadopago-payment><span><strong>Mercado Pago (prueba)</strong><small>Se abrirá el entorno de prueba de Mercado Pago. No uses datos reales.</small></span></label>
           </fieldset>
           <label class="checkout-terms"><input type="checkbox" name="terms" required><span>Confirmo que revisé el resumen y los datos son correctos. Leí los <a href="terminos.html" target="_blank" rel="noopener noreferrer">términos y condiciones</a> y la <a href="privacidad.html" target="_blank" rel="noopener noreferrer">política de privacidad</a>, y acepto que CIMA me contacte por WhatsApp para coordinar este pedido.</span></label>
           <details class="checkout-disclosure">
             <summary>¿Qué pasa al confirmar?</summary>
-            <p>Se abrirá WhatsApp con los datos y productos que completaste. El mensaje solo se comparte cuando lo enviás desde WhatsApp. Este sitio no guarda tus datos personales; el pedido queda pendiente hasta que CIMA confirme disponibilidad, entrega y pago. No se procesa ningún cobro en línea.</p>
+            <p data-checkout-disclosure>Se abrirá WhatsApp con los datos y productos que completaste. El mensaje solo se comparte cuando lo enviás desde WhatsApp. Este sitio no guarda tus datos personales; el pedido queda pendiente hasta que CIMA confirme disponibilidad, entrega y pago. No se procesa ningún cobro en línea.</p>
           </details>
-          <button class="btn btn--primary btn--lg btn--block checkout-submit" type="submit">Confirmar pedido y abrir WhatsApp</button>
-          <p class="cart-summary__note">No se realizará un pago en línea. Confirmaremos disponibilidad, envío y pago por WhatsApp.</p>
+          <button class="btn btn--primary btn--lg btn--block checkout-submit" data-checkout-submit type="submit">Confirmar pedido y abrir WhatsApp</button>
+          <p class="cart-summary__note" data-checkout-summary-note>No se realizará un pago en línea. Confirmaremos disponibilidad, envío y pago por WhatsApp.</p>
           <div class="checkout-fallback" data-checkout-fallback hidden>
             <a class="btn btn--outline btn--block" data-checkout-whatsapp target="_blank" rel="noopener noreferrer">Abrir WhatsApp para enviar el pedido</a>
             <a class="checkout-fallback__receipt" href="#" data-checkout-receipt>Ver comprobante del pedido</a>
@@ -118,7 +121,7 @@
           <div class="summary-row"><span>Entrega</span><span data-checkout-shipping-cost>A coordinar</span></div>
           <p class="free-shipping__text" data-checkout-free-shipping-text aria-live="polite"></p>
           <div class="summary-row summary-row--total"><span>Total estimado</span><span data-checkout-total>$ 0</span></div>
-          <p class="cart-summary__note">El importe final se confirma por WhatsApp. No guardamos tus datos personales en este dispositivo.</p>
+          <p class="cart-summary__note" data-checkout-summary-secondary>El importe final se confirma por WhatsApp. No guardamos tus datos personales en este dispositivo.</p>
         </aside>
       </div>
     </section>

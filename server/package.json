@@ -2,7 +2,7 @@
   "name": "cima-store-api",
   "version": "1.0.0",
   "private": true,
-  "description": "API de catálogo para la tienda CIMA",
+  "description": "API de catálogo y checkout de prueba para la tienda CIMA",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -16,6 +16,7 @@
     "better-sqlite3": "^12.2.0",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "mercadopago": "^3.6.1"
   }
 }

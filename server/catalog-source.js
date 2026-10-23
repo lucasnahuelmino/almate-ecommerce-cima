@@ -26,4 +26,18 @@ const loadCatalogSource = () => ({
   products: loadBrowserData("js/data/products.js", "PRODUCTS")
 });
 
-module.exports = { loadCatalogSource };
+const loadStoreConfig = () => {
+  const filePath = path.join(projectRoot, "js/config.js");
+  const source = fs.readFileSync(filePath, "utf8");
+  const context = vm.createContext({ window: {} }, {
+    codeGeneration: { strings: false, wasm: false }
+  });
+  new vm.Script(source, { filename: filePath }).runInContext(context, { timeout: 1000 });
+  const config = context.window.STORE_CONFIG;
+  if (!config || typeof config !== "object") {
+    throw new Error("No se pudo cargar STORE_CONFIG desde js/config.js.");
+  }
+  return config;
+};
+
+module.exports = { loadCatalogSource, loadStoreConfig };

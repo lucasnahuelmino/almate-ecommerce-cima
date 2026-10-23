@@ -2,8 +2,9 @@
    shop.js — Interfaz del catálogo con filtros reflejados en la URL
    ========================================================================== */
 
-(function () {
+(async function () {
   "use strict";
+  await window.CatalogSource.ready;
 
   const products = window.PRODUCTS || [];
   const categories = (window.CATEGORIES || []).filter((category) => !category.isVirtual);

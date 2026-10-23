@@ -2,8 +2,9 @@
    checkout.js — Datos, entrega y creación del pedido
    ========================================================================== */
 
-(function () {
+(async function () {
   "use strict";
+  await window.CatalogSource.ready;
 
   const form = document.querySelector("[data-checkout-form]");
   const emptyState = document.querySelector("[data-checkout-empty]");
@@ -23,8 +24,22 @@
   const fallbackLink = document.querySelector("[data-checkout-whatsapp]");
   const fallbackReceipt = document.querySelector("[data-checkout-receipt]");
   const submitButton = form.querySelector('button[type="submit"]');
+  const disclosure = document.querySelector("[data-checkout-disclosure]");
+  const summaryNote = document.querySelector("[data-checkout-summary-note]");
+  const checkoutIntro = document.querySelector("[data-checkout-intro]");
+  const secondarySummaryNote = document.querySelector("[data-checkout-summary-secondary]");
   const config = window.STORE_CONFIG || {};
+  const providerId = config.payments && config.payments.provider || "whatsapp";
   let items = window.Cart.getItems();
+
+  if (window.CatalogSource.status === "error") {
+    emptyState.hidden = false;
+    formContent.hidden = true;
+    emptyState.querySelector("h2").textContent = "No podemos validar el pedido";
+    emptyState.querySelector("p").textContent =
+      "Conservamos tu carrito. Intentá de nuevo cuando se restablezca la conexión con el catálogo.";
+    return;
+  }
 
   const showMessage = (text, isError) => {
     message.textContent = text || "";
@@ -44,7 +59,7 @@
   };
 
   const selectedPayment = () =>
-    paymentOptions.querySelector('input[name="payment"]:checked')?.value || "whatsapp";
+    paymentOptions.querySelector('input[name="payment"]:checked')?.value || providerId;
 
   const calculateTotals = () => {
     const subtotal = items.reduce((sum, item) => sum + item.unitPrice * item.qty, 0);
@@ -127,10 +142,32 @@
 
   const renderPaymentOptions = () => {
     const transferPercent = Math.max(0, Math.min(100, Number(config.payments && config.payments.transferDiscountPercent) || 0));
+    const isMercadoPago = providerId === "mercadopago";
+    const whatsappOption = paymentOptions.querySelector("[data-whatsapp-payment-option]");
+    const transferOption = paymentOptions.querySelector("[data-transfer-payment-option]");
+    const mercadoPagoOption = paymentOptions.querySelector("[data-mercadopago-payment-option]");
+    whatsappOption.hidden = isMercadoPago;
+    transferOption.hidden = isMercadoPago;
+    mercadoPagoOption.hidden = !isMercadoPago;
+    paymentOptions.querySelector("[data-mercadopago-payment]").checked = isMercadoPago;
+    paymentOptions.querySelector("[data-whatsapp-payment]").checked = !isMercadoPago;
     paymentOptions.querySelector("[data-transfer-discount-label]").textContent =
       transferPercent ? " (−" + transferPercent + "%)" : "";
-    paymentOptions.querySelector("[data-transfer-payment]").disabled = transferPercent <= 0;
-    if (transferPercent <= 0) {
+    paymentOptions.querySelector("[data-transfer-payment]").disabled = isMercadoPago || transferPercent <= 0;
+    if (isMercadoPago) {
+      checkoutIntro.textContent = "Completá tus datos y revisá el pedido. Se abrirá el entorno de prueba de Mercado Pago; no se realizará un cobro real.";
+      disclosure.textContent = "Se abrirá el entorno de prueba de Mercado Pago. El pedido y el pago se procesan en modo TEST; no uses datos ni medios de pago reales.";
+      summaryNote.textContent = "Pago de prueba: usá exclusivamente credenciales y medios de pago de prueba de Mercado Pago.";
+      secondarySummaryNote.textContent = "El servidor volverá a verificar precios, disponibilidad y costo de entrega antes de crear el pago de prueba.";
+      submitButton.textContent = "Continuar a Mercado Pago (prueba)";
+    } else {
+      checkoutIntro.textContent = "Completá tus datos. El pedido se coordina personalmente por WhatsApp; todavía no se realiza ningún cobro en esta página.";
+      disclosure.textContent = "Se abrirá WhatsApp con los datos y productos que completaste. El mensaje solo se comparte cuando lo enviás desde WhatsApp. Este sitio no guarda tus datos personales; el pedido queda pendiente hasta que CIMA confirme disponibilidad, entrega y pago. No se procesa ningún cobro en línea.";
+      summaryNote.textContent = "No se realizará un pago en línea. Confirmaremos disponibilidad, envío y pago por WhatsApp.";
+      secondarySummaryNote.textContent = "El importe final se confirma por WhatsApp. No guardamos tus datos personales en este dispositivo.";
+      submitButton.textContent = "Confirmar pedido y abrir WhatsApp";
+    }
+    if (!isMercadoPago && transferPercent <= 0) {
       paymentOptions.querySelector("[data-whatsapp-payment]").checked = true;
     }
   };
@@ -251,13 +288,34 @@
     submitButton.textContent = "Preparando pedido…";
     let blankWindow;
     try {
-      blankWindow = window.open("about:blank", "_blank");
+      if (providerId === "whatsapp") blankWindow = window.open("about:blank", "_blank");
       const { order, provider } = buildOrder();
       const result = await provider.createCheckout(order);
       if (!result || !result.url || !result.orderId) {
         throw new Error("El proveedor no pudo preparar el pedido.");
       }
-      window.Orders.savePending(order);
+      if (result.type === "redirect" && result.totals && Array.isArray(result.items)) {
+        order.orderId = result.orderId;
+        order.items = result.items;
+        order.totals = result.totals;
+        order.payment.method = "mercadopago";
+      }
+      if (result.type === "whatsapp" && result.totals && Array.isArray(result.items)) {
+        order.orderId = result.orderId;
+        order.items = result.items;
+        order.totals = result.totals;
+        order.reservationExpiresAt = result.reservationExpiresAt || null;
+      }
+      try {
+        window.Orders.savePending(order);
+      } catch (error) {
+        if (providerId !== "mercadopago") throw error;
+        console.error("No se pudo guardar la copia local del comprobante; el pedido queda registrado en el servidor.", error);
+      }
+      if (result.type === "redirect") {
+        window.location.href = result.url;
+        return;
+      }
       if (blankWindow) {
         blankWindow.opener = null;
         blankWindow.location.href = result.url;
@@ -266,11 +324,16 @@
       }
 
       fallbackLink.href = result.url;
+      fallbackLink.textContent = result.type === "redirect"
+        ? "Continuar a Mercado Pago (prueba)"
+        : "Abrir WhatsApp para enviar el pedido";
       fallbackReceipt.href = "gracias.html?order=" + encodeURIComponent(result.orderId);
       fallback.hidden = false;
       submitButton.disabled = false;
       submitButton.textContent = submitLabel;
-      showMessage("El pedido quedó preparado, pero el navegador bloqueó la nueva pestaña. Usá el botón de WhatsApp para enviarlo.", true);
+      showMessage(result.type === "redirect"
+        ? "El pago quedó preparado, pero el navegador bloqueó la nueva pestaña. Usá el botón de abajo para continuar."
+        : "El pedido quedó preparado, pero el navegador bloqueó la nueva pestaña. Usá el botón de WhatsApp para enviarlo.", true);
       fallbackLink.focus();
     } catch (error) {
       if (blankWindow) blankWindow.close();

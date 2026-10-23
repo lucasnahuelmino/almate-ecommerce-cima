@@ -13,6 +13,15 @@
    Tamaños:  sm · (default = md) · lg  ·  utilidad --block (ancho completo)
    ========================================================================== */
 
+.notice--error {
+  margin: 1rem auto;
+  padding: 1rem;
+  border: 1px solid #b0442d;
+  border-radius: var(--radius-md);
+  background: #fff3ef;
+  color: #7b291a;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;

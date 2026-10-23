@@ -23,6 +23,7 @@
   <script defer src="js/core/orders.js"></script>
   <script defer src="js/payments/provider.js"></script>
   <script defer src="js/payments/whatsapp.js"></script>
+  <script defer src="js/payments/mercadopago.js"></script>
   <script defer src="js/pages/thanks.js"></script>
   <script defer src="js/ui/layout.js"></script>
   <script defer src="js/ui/header.js"></script>
@@ -49,7 +50,7 @@
     <section class="container thanks-page" data-thanks-content hidden aria-labelledby="thanks-title">
       <p class="eyebrow">CIMA · Pedido preparado</p>
       <h1 id="thanks-title">¡Gracias! Ya casi está</h1>
-      <p>Se abrió WhatsApp en otra pestaña con tu consulta. Enviá el mensaje para que podamos confirmar disponibilidad, entrega y forma de pago. El pedido todavía no está pagado ni confirmado.</p>
+      <p data-thanks-status>Se abrió WhatsApp en otra pestaña con tu consulta. Enviá el mensaje para que podamos confirmar disponibilidad, entrega y forma de pago. El pedido todavía no está pagado ni confirmado.</p>
       <p class="thanks-order">Número de referencia: <strong data-thanks-order></strong></p>
       <section class="thanks-summary" aria-labelledby="thanks-summary-title">
         <h2 id="thanks-summary-title">Resumen</h2>

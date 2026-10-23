@@ -67,17 +67,21 @@ window.STORE_CONFIG = {
   },
 
   /* ---------- Pagos ----------
-     provider: "whatsapp" en la Fase 1 (cobro manual por WhatsApp).
-     Cuando se active Mercado Pago (Fase 2) se cambia a "mercadopago" y se
-     completa apiBaseUrl con la URL del servidor. El resto no cambia. */
+     Mercado Pago solo se habilita en una instalación de prueba configurada:
+     requiere credenciales TEST privadas en el servidor y una API HTTPS. */
   payments: {
     provider: "whatsapp",
-    apiBaseUrl: "",                                 // Fase 2: "https://tu-servidor.com"
+    apiBaseUrl: "",                                 // URL pública HTTPS de la API de prueba
     installments: {
       enabled: true,
       text: "Hasta 6 cuotas sin interés"
     },
     transferDiscountPercent: 10                     // Descuento por transferencia bancaria
+  },
+
+  /* ---------- Catálogo remoto (dejar vacío mientras no haya API pública) ---------- */
+  catalog: {
+    apiBaseUrl: ""
   },
 
   /* ---------- Cupones de descuento (estructura lista para usar) ----------

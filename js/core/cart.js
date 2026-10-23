@@ -6,11 +6,13 @@
   "use strict";
 
   const STORAGE_KEY = "cima-cart-v1";
-  const products = window.PRODUCTS || [];
+  let products = window.PRODUCTS || [];
   let items = [];
   let notices = [];
   let storageError = "";
   let storageReadFailed = false;
+  const catalogUnavailable = () =>
+    window.CatalogSource.status === "loading" || window.CatalogSource.status === "error";
 
   const findProduct = (productId) =>
     products.find((product) => product.id === productId && product.active);
@@ -30,10 +32,12 @@
   const makeLineId = (productId, variants) =>
     productId + ":" + JSON.stringify(variants.map((variant) => [variant.id, variant.value]));
 
-  const getTotals = () => ({
-    subtotal: items.reduce((sum, item) => sum + item.unitPrice * item.qty, 0),
-    count: items.reduce((sum, item) => sum + item.qty, 0)
-  });
+  const getTotals = () => catalogUnavailable()
+    ? { subtotal: 0, count: 0 }
+    : {
+      subtotal: items.reduce((sum, item) => sum + item.unitPrice * item.qty, 0),
+      count: items.reduce((sum, item) => sum + item.qty, 0)
+    };
 
   const notify = () => {
     window.dispatchEvent(new CustomEvent("cart:change", {
@@ -125,12 +129,15 @@
     }
   };
 
-  const getItems = () => items.map((item) => ({
+  const getItems = () => (catalogUnavailable() ? [] : items).map((item) => ({
     ...item,
     variants: item.variants.map((variant) => ({ ...variant }))
   }));
 
   const add = (productId, quantity, selectedVariants) => {
+    if (catalogUnavailable()) {
+      return { ok: false, message: "No podemos validar stock mientras el catálogo no esté disponible." };
+    }
     const product = findProduct(productId);
     if (!product) return { ok: false, message: "Este producto ya no está disponible." };
     if (product.stock <= 0) return { ok: false, message: "Este producto está agotado." };
@@ -172,6 +179,9 @@
   };
 
   const update = (id, quantity) => {
+    if (catalogUnavailable()) {
+      return { ok: false, message: "No podemos validar stock mientras el catálogo no esté disponible." };
+    }
     const item = items.find((entry) => entry.id === id);
     if (!item) return { ok: false, message: "No encontramos ese producto en el carrito." };
 
@@ -209,6 +219,18 @@
     notices = [];
     items = reconcile(readStorage());
     notify();
+  });
+
+  window.addEventListener("catalog:ready", () => {
+    notices = [];
+    if (window.CatalogSource.status === "error") {
+      notices.push("No se pudo validar el catálogo. Conservamos tu carrito, pero no podrás comprar hasta recuperar la conexión.");
+      notify();
+      return;
+    }
+    products = window.PRODUCTS || [];
+    items = reconcile(items);
+    persistAndNotify();
   });
 
   window.Cart = {

@@ -5,6 +5,73 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
 ---
 
+## [1.9.0] — 2026-10-22
+
+### Administración de catálogo, inventario y pedidos por WhatsApp
+
+#### Agregado
+- Exportación e importación autenticada de catálogo CSV desde `/admin`, con previsualización, validación completa y aplicación transaccional.
+- Catálogo SQLite persistente: los datos iniciales ya no sobrescriben precios, productos ni stock administrados cuando el servidor reinicia.
+- Carga opcional del catálogo remoto en inicio, tienda, ficha, carrito y checkout; ante una caída de API configurada no se muestran datos de precio/stock obsoletos.
+- Registro server-side de solicitudes WhatsApp al conectar el backend, reserva de stock configurable (30 minutos por defecto) y acción para cancelar y liberar la reserva con auditoría.
+- Registro interno de eventos de correo previstos. El envío sigue desactivado hasta elegir proveedor, remitente y configuración.
+
+#### Documentación y verificación
+- README actualizado con formato CSV, significado del stock, conexión de API y límites actuales del email.
+- Suite backend ampliada con importación/validación CSV, estabilidad de stock, reservas y liberación administrativa.
+
+## [1.7.0] — 2026-10-22
+
+### Etapa 14 — Endurecimiento y preparación de despliegue
+
+#### Agregado
+- Validación de firmas de Webhooks Mercado Pago con el validador oficial del SDK e ID obtenido del parámetro firmado.
+- El checkout queda deshabilitado hasta configurar el secreto; firmas faltantes, inválidas, alteradas o vencidas se rechazan.
+- Validación de configuración de despliegue: HTTPS, CORS, SQLite en disco persistente y credenciales exclusivamente TEST.
+- Guía de preparación de hosting persistente, variables privadas, Webhooks sandbox y verificaciones end-to-end.
+- Siete pruebas nuevas de firma y configuración de despliegue; la suite del backend ahora contiene 19 pruebas.
+
+#### Pendiente
+- Ejecución del flujo sandbox en un entorno público con credenciales/usuario de prueba y dominio del titular.
+- Lanzamiento productivo de pagos: requiere una etapa separada, revisión operativa y autorización expresa; esta integración continúa bloqueada a credenciales TEST.
+
+## [1.8.0] — 2026-10-22
+
+### Etapa 15 — Panel privado de pedidos
+
+#### Agregado
+- Panel servido por el backend con contraseña privada opcional, sesiones aleatorias `HttpOnly`/`SameSite=Strict` (y `Secure` en producción), expiración y límite de intentos por IP.
+- Protección de las mutaciones con validación de origen y token CSRF; páginas y respuestas privadas usan `no-store` y CSP restrictiva.
+- Listado paginado de pedidos con información de contacto y entrega necesaria para operarlos, sin exponer DNI en la respuesta administrativa.
+- Estados operativos separados del estado de pago, transiciones limitadas a pedidos pagados y auditoría de cada cambio.
+- Rutas y archivos del panel deshabilitados (`404`) si no se configura `ADMIN_PASSWORD`.
+- Pruebas automatizadas de acceso, sesión, rate limit, CSRF, datos minimizados, transiciones y auditoría.
+
+#### Límites
+- Solo administra pedidos guardados en el backend; no incorpora pedidos coordinados exclusivamente por WhatsApp.
+- No cancela pedidos ni ejecuta cambios de pago o reembolsos.
+
+## [1.6.0] — 2026-10-22
+
+### Etapa 13 — Mercado Pago Checkout Pro (TEST)
+
+#### Agregado
+- `POST /api/checkout` con validación de datos, variantes, zonas y stock del servidor; recalcula precios, envío y total desde el catálogo.
+- Creación de preferencias Checkout Pro con el SDK oficial, acceso exclusivamente a tokens `TEST-`, expiración y retorno a `gracias.html`.
+- Reservas temporales de inventario y persistencia de pedidos/estados de pago en SQLite.
+- Webhook de pagos que consulta el pago a Mercado Pago, verifica pedido, moneda y total, y aplica el descuento de stock idempotentemente.
+- `GET /api/orders/:id` publica el estado y resumen sin exponer datos personales.
+- Proveedor `mercadopago.js`, selección de proveedor en checkout y consulta de estado en la página de gracias.
+- Doce pruebas automatizadas con gateway simulado, sin transacciones reales.
+
+#### Cambiado
+- Política de privacidad y README actualizados para documentar el tratamiento de datos del checkout en backend.
+- El checkout predeterminado sigue en WhatsApp; Mercado Pago solo se activa tras configurar URLs, servidor y credenciales TEST.
+
+#### Pendiente
+- Prueba end-to-end en el sandbox: requiere credencial TEST del titular, frontend HTTPS de prueba y URL HTTPS pública para el webhook.
+- Retención de datos y revisión legal/operativa antes de cualquier producción.
+
 ## [1.5.0] — 2026-10-22
 
 ### Etapa 12 — Backend base

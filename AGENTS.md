@@ -315,23 +315,25 @@ Flujo:
    - `notification_url` → `/api/webhooks/mercadopago`
    - `statement_descriptor`
 4. Devuelve `init_point`; el frontend redirige al cliente.
-5. **Webhook:** MP notifica el pago → el servidor consulta el pago a la API de MP con su ID (no confiar en el body), actualiza el pedido en SQLite (`paid`/`failed`), descuenta stock. Debe ser **idempotente** (la misma notificación puede llegar más de una vez).
+5. **Webhook:** MP notifica el pago → el servidor valida `x-signature` y `x-request-id` con el SDK oficial y el secreto de la aplicación, toma `data.id` del query firmado, consulta el pago a la API de MP (no confiar en el body), actualiza el pedido en SQLite (`paid`/`failed`) y descuenta stock. Debe ser **idempotente** (la misma notificación puede llegar más de una vez).
 6. `gracias.html` consulta `GET /api/orders/:id` y muestra el estado real.
 
 ### 8.3.1 Variables de entorno (`server/.env.example`)
 ```
 PORT=3000
-BASE_URL=https://tu-dominio.com
+NODE_ENV=production
 FRONTEND_URL=https://tu-dominio.com
+PUBLIC_API_URL=https://api.tu-dominio.com
 MP_ACCESS_TOKEN=TEST-xxxxxxxxxxxxxxxx
-MP_WEBHOOK_SECRET=
-DB_PATH=./data/orders.sqlite
+MP_WEBHOOK_SECRET=secreto-privado-del-panel-de-webhooks
+DB_PATH=/var/data/orders.sqlite
 CORS_ORIGIN=https://tu-dominio.com
 ```
 Trabajar primero con **credenciales de prueba (TEST)** y usuarios de prueba de MP; pasar a producción solo con mi confirmación.
 
 ### 8.4 Extras previstos
-- Validación de firma del webhook (`x-signature`).
+- Prueba del flujo sandbox desde un dominio HTTPS público del titular.
+- Revisión de retención de datos y autorización explícita antes de habilitar pagos reales.
 - Estados de pedido y emails transaccionales (Fase 3).
 - Posibilidad de sumar Checkout API / Bricks más adelante sin tocar el resto del código.
 
@@ -370,7 +372,8 @@ Cada etapa termina con: ✅ resumen, 🧪 cómo probarlo, 📁 archivos creados/
 | 11 | **README + entrega Fase 1** | Documentación para el dueño del negocio, guía de carga de productos y deploy estático |
 | 12 | **Backend base (Fase 2)** | `/server` con Express, SQLite, `GET /api/health`, catálogo del lado servidor |
 | 13 | **Mercado Pago (TEST)** | `POST /api/checkout`, preferencia, `back_urls`, webhook idempotente, `provider mercadopago.js` activo |
-| 14 | **Pruebas end-to-end y salida a producción** | Pagos de prueba, checklist de seguridad, variables de producción, deploy (Render/Railway/VPS) |
+| 14 | **Pruebas end-to-end y preparación de despliegue** | Firma de webhooks, pruebas de checkout, variables HTTPS/CORS/disco persistente y guía deploy (Render/Railway/VPS); pagos reales siguen bloqueados hasta autorización explícita |
+| 15 | **Panel privado de pedidos** | Panel opcional alojado por backend, autenticación segura, consulta de datos mínimos y estados operativos auditados; no ejecuta reembolsos ni altera el estado de pago |
 
 ---
 

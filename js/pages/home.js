@@ -2,8 +2,9 @@
    home.js — Contenido dinámico de la página de inicio
    ========================================================================== */
 
-(function () {
+(async function () {
   "use strict";
+  await window.CatalogSource.ready;
 
   const categories = (window.CATEGORIES || [])
     .filter((category) => !category.isVirtual && category.image)

@@ -2,8 +2,9 @@
    cart.js — Página del carrito
    ========================================================================== */
 
-(function () {
+(async function () {
   "use strict";
+  await window.CatalogSource.ready;
 
   const container = document.querySelector("[data-cart-items]");
   const emptyState = document.querySelector("[data-cart-empty]");
@@ -127,6 +128,16 @@
       shippingProgress.hidden = true;
     }
   };
+
+  if (window.CatalogSource.status === "error") {
+    cartContent.hidden = true;
+    emptyState.hidden = false;
+    emptyState.querySelector("h2").textContent = "Catálogo no disponible";
+    emptyState.querySelector("p").textContent =
+      "Conservamos tu carrito, pero no mostraremos precios ni stock hasta recuperar la conexión.";
+    renderMessages();
+    return;
+  }
 
   document.addEventListener("click", (event) => {
     const removeButton = event.target.closest("[data-cart-remove]");

@@ -2,8 +2,9 @@
    product.js — Ficha, galería, variantes y estimación de envío
    ========================================================================== */
 
-(function () {
+(async function () {
   "use strict";
+  await window.CatalogSource.ready;
 
   const params = new URLSearchParams(window.location.search);
   const slug = params.get("slug");

@@ -66,7 +66,10 @@
   // Todo lo que diga data-cart-open / data-cart-close controla el drawer
   document.addEventListener("click", (e) => {
     if (e.target.closest("[data-cart-open]")) { e.preventDefault(); open(); }
-    if (e.target.closest("[data-cart-close]")) { e.preventDefault(); close(); }
+    const closeControl = e.target.closest("[data-cart-close]");
+    if (!closeControl) return;
+    if (closeControl.tagName !== "A") e.preventDefault();
+    close();
   });
   backdrop.addEventListener("click", close);
 
