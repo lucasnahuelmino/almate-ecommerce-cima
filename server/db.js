@@ -778,6 +778,18 @@ const catalogProductConflicts = (database, { id = "", sku = "", slug = "", exclu
 const categoryExists = (database, categoryId) =>
   Boolean(database.prepare("SELECT 1 FROM categories WHERE id = ?").get(categoryId));
 
+/**
+ * Cuántos productos usan una imagen (por ruta exacta dentro del JSON data).
+ * Se usa para no borrar imágenes subidas que siguen en uso.
+ */
+const catalogImageUsage = (database, imagePath) => {
+  // Escapa los comodines LIKE; las rutas de imagen no deberían traerlos igual.
+  const escaped = String(imagePath).replace(/[\\%_]/g, (char) => `\\${char}`);
+  return database.prepare(
+    "SELECT COUNT(*) AS count FROM products WHERE data LIKE ? ESCAPE '\\'"
+  ).get(`%"${escaped}"%`).count;
+};
+
 /** Borra un producto SOLO si no tiene ventas ni reservas. */
 const deleteProductForAdmin = (database, id) => {
   const sold = database.prepare(
@@ -822,5 +834,6 @@ module.exports = {
   setCatalogProductActive,
   catalogProductConflicts,
   categoryExists,
+  catalogImageUsage,
   deleteProductForAdmin
 };

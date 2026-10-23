@@ -5,6 +5,25 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
 ---
 
+## [1.11.0] — 2026-10-23
+
+### Panel de administración — Etapa 2: gestión de imágenes
+
+#### Agregado
+- Subida de imágenes desde el formulario de producto ("Subir imágenes", acepta JPG/PNG/WebP, máx. 10 MB): vista previa instantánea y alta en la galería del producto.
+- `server/services/media.js`: validación del tipo real por bytes mágicos (nunca por la extensión ni el nombre del archivo), límites de tamaño y dimensiones (12000 px por lado, 50 MP) y nombres UUID generados por el servidor; el cliente no puede decidir rutas ni nombres.
+- Endpoints autenticados (sesión + same-origin + CSRF): `POST /api/admin/media` (subir, cuerpo binario) y `DELETE /api/admin/media/:name` (borrar solo si ningún producto lo usa; responde 409 con mensaje claro si está en uso).
+- El backend sirve `/media/<nombre>` en solo lectura con cabeceras seguras (`X-Content-Type-Options: nosniff`, `Content-Disposition: inline`, `Cache-Control: immutable`) y sin listado de carpetas.
+- Galería con grip de arrastre para reordenar imágenes (con los botones ↑↓ como alternativa accesible) y borrado con confirmación para imágenes subidas.
+- Variable opcional `UPLOAD_DIR` (por defecto `server/data/uploads/`, junto a la base de datos); las imágenes subidas quedan fuera de git.
+
+#### Cambiado
+- La sección Imágenes del formulario ahora distingue "Subir imágenes" (archivos nuevos) de "Agregar ruta manual" (rutas existentes como `img/products/*.svg`, que no se migran ni se rompen).
+
+#### Verificado
+- 55/55 pruebas del backend pasaron (41 existentes + 14 nuevas en `media.test.js`), incluida toda la suite previa de catálogo y CSV.
+- Prueba manual de humo contra el servidor real y verificación completa en navegador: subida desde el panel, vista previa, guardado del producto y miniatura visible en el listado.
+
 ## [1.10.0] — 2026-10-23
 
 ### Panel de administración — Etapa 1: catálogo visual y edición individual

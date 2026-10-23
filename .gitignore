@@ -15,3 +15,6 @@ desktop.ini
 
 # Carpeta de datos de la base SQLite (Fase 2)
 server/data/
+
+# Imágenes subidas desde el panel de administración
+server/data/uploads/

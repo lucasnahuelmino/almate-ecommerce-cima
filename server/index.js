@@ -35,6 +35,14 @@ const corsOrigins = (process.env.CORS_ORIGIN || "")
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
+
+// Carpeta persistente para imágenes subidas desde el panel (Etapa 2).
+// Por defecto vive junto a la base de datos; se puede cambiar con UPLOAD_DIR.
+const uploadsPath = process.env.UPLOAD_DIR || "./data/uploads";
+const mediaDirectory = path.isAbsolute(uploadsPath)
+  ? uploadsPath
+  : path.resolve(__dirname, uploadsPath);
+
 const checkoutService = createCheckoutService({
   database,
   config: loadStoreConfig(),
@@ -58,7 +66,8 @@ const app = createApp({
   checkoutService,
   whatsappOrderService,
   adminAuth,
-  trustProxyHops
+  trustProxyHops,
+  mediaDirectory
 });
 const server = app.listen(port, () => {
   console.log(`CIMA API escuchando en http://localhost:${port}`);

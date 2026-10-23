@@ -652,6 +652,43 @@ input:focus-visible {
   background: #fff;
 }
 
+.image-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Input de archivo oculto visualmente pero accesible para herramientas y screen readers */
+.visually-hidden-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.row-entry__grip {
+  cursor: grab;
+  color: var(--muted);
+  font-size: 1rem;
+  user-select: none;
+  padding: 0 0.2rem;
+}
+
+.row-entry__grip:active {
+  cursor: grabbing;
+}
+
+.row-entry--dragging {
+  opacity: 0.5;
+  border: 1px dashed var(--accent);
+  border-radius: 0.3rem;
+}
+
 .row-entry__actions {
   display: flex;
   gap: 0.15rem;

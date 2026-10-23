@@ -33,6 +33,8 @@
   const stockHint = form.querySelector("[data-stock-hint]");
   const imageRows = form.querySelector("[data-image-rows]");
   const imageAdd = form.querySelector("[data-image-add]");
+  const imageFile = form.querySelector("[data-image-file]");
+  const imageUpload = form.querySelector("[data-image-upload]");
   const specRows = form.querySelector("[data-spec-rows]");
   const specAdd = form.querySelector("[data-spec-add]");
   const variantRows = form.querySelector("[data-variant-rows]");
@@ -256,13 +258,36 @@
 
   /* ---------- Formulario: imágenes ---------- */
 
+  // Sube un archivo al servidor y devuelve la URL pública (/media/<uuid>.<ext>).
+  const uploadImage = async (file) => {
+    const buffer = await file.arrayBuffer();
+    const result = await core.request("/api/admin/media", {
+      method: "POST",
+      body: buffer,
+      contentType: "application/octet-stream"
+    });
+    return result.media.url;
+  };
+
   const createImageRow = (value = "") => {
     const row = document.createElement("div");
     row.className = "row-entry";
+    row.draggable = false; // se activa solo desde el "grip" para no interferir con inputs
+
+    // Grip de arrastre (reordenar con mouse)
+    const grip = document.createElement("span");
+    grip.className = "row-entry__grip";
+    grip.textContent = "⠿";
+    grip.title = "Arrastrá para reordenar";
+    grip.setAttribute("aria-hidden", "true");
+    grip.addEventListener("mousedown", () => { row.draggable = true; });
+    grip.addEventListener("mouseup", () => { row.draggable = false; });
+    grip.addEventListener("touchstart", () => { row.draggable = true; }, { passive: true });
+
     const input = document.createElement("input");
     input.type = "text";
     input.value = value;
-    input.placeholder = "img/products/olla.svg";
+    input.placeholder = "img/products/olla.svg o /media/…";
     input.setAttribute("aria-label", "Ruta de la imagen");
     const preview = document.createElement("img");
     preview.className = "row-entry__preview";
@@ -295,16 +320,89 @@
     remove.type = "button";
     remove.className = "link-button link-button--danger";
     remove.textContent = "Quitar";
-    remove.addEventListener("click", () => row.remove());
+    remove.addEventListener("click", async () => {
+      const url = input.value.trim();
+      // Si es una imagen subida (/media/…), preguntar antes de borrar del servidor.
+      if (url.startsWith("/media/")) {
+        const confirmed = window.confirm(
+          "¿Borrar esta imagen del servidor? Esta acción no se puede deshacer."
+        );
+        if (!confirmed) return;
+        try {
+          await core.request(`/api/admin/media/${encodeURIComponent(url.split("/").pop())}`, {
+            method: "DELETE"
+          });
+          showMessage("Imagen borrada del servidor.", "ok");
+        } catch (error) {
+          // Si está en uso, el servidor responde 409; solo quitamos la fila.
+          if (error.status !== 409) {
+            showMessage(error.message);
+            return;
+          }
+        }
+      }
+      row.remove();
+    });
 
     const actions = document.createElement("div");
     actions.className = "row-entry__actions";
     actions.append(moveUp, moveDown, remove);
-    row.append(input, preview, actions);
+    row.append(grip, input, preview, actions);
     return row;
   };
 
   imageAdd.addEventListener("click", () => imageRows.appendChild(createImageRow()));
+
+  // "Subir imágenes": usa el input de archivo persistente del HTML.
+  imageUpload.addEventListener("click", () => imageFile.click());
+
+  imageFile.addEventListener("change", async () => {
+    const files = Array.from(imageFile.files || []);
+    if (!files.length) return;
+    imageUpload.disabled = true;
+    imageUpload.textContent = "Subiendo…";
+    let uploaded = 0;
+    for (const file of files) {
+      try {
+        const url = await uploadImage(file);
+        imageRows.appendChild(createImageRow(url));
+        uploaded += 1;
+      } catch (error) {
+        showMessage(error.message);
+      }
+    }
+    imageUpload.disabled = false;
+    imageUpload.textContent = "Subir imágenes";
+    imageFile.value = "";
+    if (uploaded > 0) {
+      showMessage(`${uploaded} imagen${uploaded > 1 ? "es" : ""} subida${uploaded > 1 ? "s" : ""}.`, "ok");
+    }
+  });
+
+  // Arrastre para reordenar (solo activo desde el grip).
+  let draggedRow = null;
+  imageRows.addEventListener("dragstart", (event) => {
+    const row = event.target.closest(".row-entry");
+    if (!row) return;
+    draggedRow = row;
+    row.classList.add("row-entry--dragging");
+  });
+  imageRows.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    const row = event.target.closest(".row-entry");
+    if (!row || row === draggedRow) return;
+    const rect = row.getBoundingClientRect();
+    const after = event.clientY > rect.top + rect.height / 2;
+    if (after) row.parentNode.insertBefore(draggedRow, row.nextSibling);
+    else row.parentNode.insertBefore(draggedRow, row);
+  });
+  imageRows.addEventListener("dragend", () => {
+    if (draggedRow) {
+      draggedRow.classList.remove("row-entry--dragging");
+      draggedRow.draggable = false;
+      draggedRow = null;
+    }
+  });
 
   /* ---------- Formulario: especificaciones ---------- */
 

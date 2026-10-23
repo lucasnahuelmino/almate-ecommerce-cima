@@ -139,9 +139,13 @@
 
           <fieldset class="product-form__section">
             <legend>Imágenes</legend>
-            <p class="field-hint">La primera imagen es la principal. Cada imagen necesita una ruta (ej.: img/products/olla.svg).</p>
+            <p class="field-hint">La primera imagen es la principal. Formatos: JPG, PNG o WebP (máx. 10 MB). También podés pegar una ruta manual.</p>
             <div class="image-rows" data-image-rows></div>
-            <button class="button button--secondary" type="button" data-image-add>Agregar imagen</button>
+            <input type="file" accept="image/jpeg,image/png,image/webp" data-image-file aria-label="Seleccionar imágenes para subir" class="visually-hidden-input">
+            <div class="image-actions">
+              <button class="button button--secondary" type="button" data-image-upload>Subir imágenes</button>
+              <button class="button button--secondary" type="button" data-image-add>Agregar ruta manual</button>
+            </div>
           </fieldset>
 
           <fieldset class="product-form__section">

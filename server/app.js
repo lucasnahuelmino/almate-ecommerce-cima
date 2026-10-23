@@ -19,7 +19,8 @@ const createApp = ({
   checkoutService = null,
   whatsappOrderService = null,
   adminAuth = createAdminAuth({}),
-  trustProxyHops = 0
+  trustProxyHops = 0,
+  mediaDirectory = null
 }) => {
   if (!database) throw new Error("La base SQLite es obligatoria para iniciar la API.");
 
@@ -67,6 +68,27 @@ const createApp = ({
   // Son archivos públicos del frontend; se sirven desde el mismo origen
   // para respetar la CSP estricta del panel (img-src 'self').
   app.use("/img", express.static(path.join(__dirname, "..", "img")));
+
+  // Imágenes subidas desde el panel (Etapa 2). Se sirven con cabeceras
+  // seguras: solo tipos de imagen, sin listado de carpetas y con
+  // X-Content-Type-Options: nosniff para que el navegador no adivine.
+  if (mediaDirectory) {
+    app.use("/media", express.static(mediaDirectory, {
+      index: false,
+      dotfiles: "deny",
+      fallthrough: false,
+      setHeaders(response, filePath) {
+        const extension = path.extname(filePath).toLowerCase();
+        const contentTypes = { ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp" };
+        if (contentTypes[extension]) {
+          response.setHeader("Content-Type", contentTypes[extension]);
+        }
+        response.setHeader("X-Content-Type-Options", "nosniff");
+        response.setHeader("Content-Disposition", "inline");
+        response.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+      }
+    }));
+  }
 
   app.get("/api/products", (_request, response) => {
     response.json({
@@ -153,7 +175,7 @@ const createApp = ({
       return;
     }
     next();
-  }, createAdminRouter({ database, adminAuth }));
+  }, createAdminRouter({ database, adminAuth, mediaDirectory }));
 
   app.get(["/admin", "/admin/"], applyAdminPageHeaders, (request, response, next) => {
     if (!adminAuth.enabled) {

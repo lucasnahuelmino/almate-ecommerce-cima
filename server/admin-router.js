@@ -3,7 +3,8 @@ const path = require("node:path");
 const {
   cancelWhatsappOrder,
   listAdminOrders,
-  updateOrderFulfillment
+  updateOrderFulfillment,
+  catalogImageUsage
 } = require("./db");
 const {
   exportCatalogCsv,
@@ -20,6 +21,7 @@ const {
   updateProduct
 } = require("./services/catalog-manage");
 const { listCategories } = require("./db");
+const { createMediaService } = require("./services/media");
 
 const privateOrderFields = (request, response, next) => {
   response.set({
@@ -30,8 +32,9 @@ const privateOrderFields = (request, response, next) => {
   next();
 };
 
-const createAdminRouter = ({ database, adminAuth }) => {
+const createAdminRouter = ({ database, adminAuth, mediaDirectory = null }) => {
   const router = express.Router();
+  const media = mediaDirectory ? createMediaService({ directory: mediaDirectory }) : null;
 
   const isSameOrigin = (request) =>
     request.get("origin") === `${request.protocol}://${request.get("host")}`;
@@ -286,6 +289,64 @@ const createAdminRouter = ({ database, adminAuth }) => {
       }
       try {
         deleteProduct(database, request.params.id);
+        response.status(204).end();
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  /* ---------- Imágenes (Etapa 2) ---------- */
+
+  // El archivo viaja como cuerpo binario crudo (application/octet-stream);
+  // el navegador manda solo los bytes, sin nombre ni ruta del lado cliente.
+  router.post(
+    "/media",
+    requireSameOrigin,
+    requireSession,
+    requireCsrf,
+    express.raw({ type: "application/octet-stream", limit: "12mb" }),
+    async (request, response, next) => {
+      if (!media) {
+        response.status(503).json({ error: "La carga de imágenes no está disponible en este servidor." });
+        return;
+      }
+      try {
+        const result = await media.store(request.body);
+        response.status(201).json({ media: result });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  router.delete(
+    "/media/:name",
+    requireSameOrigin,
+    requireSession,
+    requireCsrf,
+    async (request, response, next) => {
+      if (!media) {
+        response.status(503).json({ error: "La carga de imágenes no está disponible en este servidor." });
+        return;
+      }
+      const name = request.params.name;
+      try {
+        // No permitimos rutas del cliente: el servicio valida que el nombre
+        // sea un UUID con extensión conocida.
+        const exists = await media.exists(name);
+        if (!exists) {
+          response.status(404).json({ error: "Imagen no encontrada." });
+          return;
+        }
+        const usage = catalogImageUsage(database, `/media/${name}`);
+        if (usage > 0) {
+          response.status(409).json({
+            error: `La imagen está en uso por ${usage} producto${usage > 1 ? "s" : ""}. Quitála de ${usage > 1 ? "los productos" : "el producto"} antes de borrarla.`
+          });
+          return;
+        }
+        await media.remove(name);
         response.status(204).end();
       } catch (error) {
         next(error);

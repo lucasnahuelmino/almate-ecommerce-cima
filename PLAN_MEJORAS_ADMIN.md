@@ -2,7 +2,7 @@
 
 > Documento central de planificación y seguimiento.
 > Estado de las etapas: **pendiente** · **en curso** · **bloqueada** · **completada**
-> Última actualización: 2026-10-23 (Etapa 1 completada: catálogo visual y edición individual)
+> Última actualización: 2026-10-23 (Etapa 2 completada: gestión de imágenes)
 
 ---
 
@@ -137,15 +137,25 @@ Cada etapa termina con pruebas ejecutadas y una parada para tu aprobación.
 
 **Nota para el dueño:** los cambios hechos en el panel se guardan en `server/data/orders.sqlite` y sobreviven reinicios. Si el backend no está corriendo, la tienda muestra un aviso y no lista productos (no muestra datos viejos).
 
-### Etapa 2 — Gestión de imágenes · Estado: PENDIENTE
+### Etapa 2 — Gestión de imágenes · Estado: COMPLETADA (2026-10-23)
 
-- Investigación ya hehta: no existe nada, se construye desde cero.
-- Almacenamiento propuesto: carpeta persistente junto a la base de datos (`server/data/uploads/`, en el mismo disco persistente del hosting). Requiere tu confirmación (ver sección 8).
-- `server/services/media.js` (nuevo): valida tipo real por bytes mágicos (JPG/PNG/WebP), tamaño máximo, dimensiones; genera nombres únicos (UUID); nunca acepta rutas del cliente.
-- `server/admin-router.js`: `POST /api/admin/media` (subir), `DELETE /api/admin/media/:name` (borrar si ningún producto lo usa). Todo autenticado.
-- `runtime-config.js` y `.env.example`: variable opcional de carpeta de subidas.
-- Panel: en el formulario de producto, galería con arrastre para ordenar, imagen principal, vista previa, reemplazo y borrado con confirmación.
-- Imágenes existentes (`img/products/*.svg`) se conservan tal cual; no se migran ni se rompen referencias.
+**Backend (implementado)**
+
+- `server/services/media.js` (nuevo): valida tipo real por bytes mágicos (JPG, PNG o WebP — nunca confía en la extensión ni en el nombre del archivo), tamaño máximo (10 MB), dimensiones (máx. 12000 px por lado, 50 MP); genera nombres UUID únicos; nunca acepta rutas del directorio del cliente. El servicio se puede instanciar con cualquier carpeta (para pruebas usa un directorio temporal).
+- `server/admin-router.js`: `POST /api/admin/media` (subir, cuerpo binario `application/octet-stream`, 12 mb), `DELETE /api/admin/media/:name` (borrar solo si ningún producto lo usa; responde 409 con mensaje claro si está en uso). Todo con sesión + same-origin + CSRF, como los endpoints existentes.
+- `server/app.js`: el backend sirve `/media/<nombre>` en modo solo lectura con cabeceras seguras (`X-Content-Type-Options: nosniff`, `Content-Disposition: inline`, `Cache-Control: immutable`), sin listado de carpetas y solo para extensiones de imagen.
+- `server/index.js`: la carpeta de subidas se resuelve desde `UPLOAD_DIR` (opcional) o por defecto `server/data/uploads/` (junto a la base de datos, en el mismo disco persistente).
+- `server/.env.example` y `.gitignore`: variable `UPLOAD_DIR` documentada; las imágenes subidas quedan fuera de git.
+- `server/db.js`: nueva función `catalogImageUsage(database, imagePath)` para contar cuántos productos usan una imagen (para proteger el borrado).
+
+**Panel (implementado)**
+
+- `server/admin/index.html`, `catalog.js`, `admin.css`: en la sección Imágenes del formulario de producto, botón "Subir imágenes" (input de archivo persistente acepta JPG/PNG/WebP), vista previa instantánea, grip de arrastre para reordenar (con botones ↑↓ como alternativa accesible), botón "Quitar" con confirmación para imágenes subidas (`/media/…`), y "Agregar ruta manual" para rutas existentes (`img/products/*.svg`). Las imágenes existentes no se migran ni se rompen.
+
+**Pruebas (ejecutadas)**
+
+- Nuevas: `server/test/media.test.js` con 14 pruebas: autenticación/CSRF/origen, subida de PNG/JPEG/WebP con nombre UUID, rechazo de archivos falsos (bytes mágicos), rechazo de tamaño excesivo, rechazo de path traversal, servido con cabeceras seguras, sin listado de carpetas, borrado de imagen libre (204) y en uso (409), conteo de uso, nombres únicos sin sobrescritura, validación de buffer, y persistencia tras reinicio del servicio.
+- Resultado: **55/55 pruebas pasaron** (las 41 existentes + 14 nuevas). Además, prueba manual de humo contra el servidor real y verificación completa en navegador: subida desde el panel, vista previa, guardado de producto con la imagen, y miniatura visible en el listado.
 
 **Pruebas previstas:** archivo con extensión falsa rechazado; exceso de tamaño rechazado; ruta de cliente ignorada; persistencia tras reinicio del servidor; imagen servida con cabeceras seguras.
 
@@ -273,10 +283,10 @@ Informe final de cada etapa: qué pruebas se ejecutaron, cuáles pasaron, cuále
 |-------|--------|-------|----------------------|
 | 0 — Auditoría y planificación | **completada** | 2026-10-23 | 30/30 pruebas existentes pasaron; no se modificó ningún archivo del sistema |
 | 1 — Catálogo y edición individual | **completada** | 2026-10-23 | 41/41 pruebas pasaron (30 existentes + 11 nuevas en `admin-catalog.test.js`); prueba manual de humo y verificación en navegador |
-| 2 — Imágenes | pendiente | — | — |
+| 2 — Imágenes | **completada** | 2026-10-23 | 55/55 pruebas pasaron (41 existentes + 14 nuevas en `media.test.js`); prueba manual de humo y verificación completa en navegador |
 | 3 — Operaciones masivas | pendiente | — | — |
 | 4 — Excel y CSV | pendiente | — | — |
 | 5 — Seguridad, historial y respaldo | pendiente | — | — |
 
 **Problemas pendientes de esta fase:**
-- Ninguno. Etapa 1 completada y a la espera de tu "OK" para comenzar la Etapa 2 (imágenes).
+- Ninguno. Etapa 2 completada y a la espera de tu "OK" para comenzar la Etapa 3 (operaciones masivas).
