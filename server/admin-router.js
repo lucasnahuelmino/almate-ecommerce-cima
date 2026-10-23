@@ -10,6 +10,16 @@ const {
   importCatalogCsv,
   previewCatalogCsv
 } = require("./services/catalog-admin");
+const {
+  createProduct,
+  deleteProduct,
+  duplicateProduct,
+  getProduct,
+  listProducts,
+  setProductActive,
+  updateProduct
+} = require("./services/catalog-manage");
+const { listCategories } = require("./db");
 
 const privateOrderFields = (request, response, next) => {
   response.set({
@@ -53,6 +63,10 @@ const createAdminRouter = ({ database, adminAuth }) => {
   };
 
   router.use(privateOrderFields);
+
+  // El parser JSON global no alcanza /api/admin/ (ver app.js); el panel
+  // necesita cuerpos más grandes para descripciones de productos largas.
+  router.use(express.json({ limit: "128kb", strict: true }));
 
   router.post("/login", requireSameOrigin, (request, response, next) => {
     try {
@@ -153,6 +167,126 @@ const createAdminRouter = ({ database, adminAuth }) => {
           return;
         }
         response.json({ result });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  /* ---------- Gestión individual de productos (Etapa 1) ---------- */
+
+  const isValidProductId = (value) => /^[a-zA-Z0-9_-]{1,100}$/.test(value);
+
+  router.get("/categories", requireSession, (request, response) => {
+    response.json({ categories: listCategories(database) });
+  });
+
+  router.get("/products", requireSession, (request, response, next) => {
+    try {
+      response.json(listProducts(database, request.query));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/products/:id", requireSession, (request, response, next) => {
+    if (!isValidProductId(request.params.id)) {
+      response.status(404).json({ error: "Producto no encontrado." });
+      return;
+    }
+    try {
+      response.json({ product: getProduct(database, request.params.id) });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post(
+    "/products",
+    requireSameOrigin,
+    requireSession,
+    requireCsrf,
+    (request, response, next) => {
+      try {
+        response.status(201).json({ product: createProduct(database, request.body) });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  router.patch(
+    "/products/:id",
+    requireSameOrigin,
+    requireSession,
+    requireCsrf,
+    (request, response, next) => {
+      if (!isValidProductId(request.params.id)) {
+        response.status(404).json({ error: "Producto no encontrado." });
+        return;
+      }
+      try {
+        response.json({ product: updateProduct(database, request.params.id, request.body) });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  router.post(
+    "/products/:id/duplicate",
+    requireSameOrigin,
+    requireSession,
+    requireCsrf,
+    (request, response, next) => {
+      if (!isValidProductId(request.params.id)) {
+        response.status(404).json({ error: "Producto no encontrado." });
+        return;
+      }
+      try {
+        response.status(201).json({ product: duplicateProduct(database, request.params.id) });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  router.post(
+    "/products/:id/archive",
+    requireSameOrigin,
+    requireSession,
+    requireCsrf,
+    (request, response, next) => {
+      if (!isValidProductId(request.params.id)) {
+        response.status(404).json({ error: "Producto no encontrado." });
+        return;
+      }
+      const active = request.body && request.body.active;
+      if (typeof active !== "boolean") {
+        response.status(400).json({ error: 'Enviá { "active": true } o { "active": false }.' });
+        return;
+      }
+      try {
+        response.json({ product: setProductActive(database, request.params.id, active) });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  router.delete(
+    "/products/:id",
+    requireSameOrigin,
+    requireSession,
+    requireCsrf,
+    (request, response, next) => {
+      if (!isValidProductId(request.params.id)) {
+        response.status(404).json({ error: "Producto no encontrado." });
+        return;
+      }
+      try {
+        deleteProduct(database, request.params.id);
+        response.status(204).end();
       } catch (error) {
         next(error);
       }

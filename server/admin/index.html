@@ -4,9 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow, noarchive">
-    <title>Pedidos — Administración CIMA</title>
+    <title>Administración CIMA</title>
     <link rel="stylesheet" href="/admin/admin.css">
     <script src="/admin/admin.js" defer></script>
+    <script src="/admin/catalog.js" defer></script>
   </head>
   <body>
     <main class="admin-shell">
@@ -29,20 +30,12 @@
         <p class="message" data-login-message role="alert" hidden></p>
       </section>
 
+      <nav class="admin-nav" data-admin-nav aria-label="Secciones del panel" hidden>
+        <button class="admin-nav__tab" type="button" data-nav-tab="orders" aria-current="page">Pedidos</button>
+        <button class="admin-nav__tab" type="button" data-nav-tab="catalog">Catálogo</button>
+      </nav>
+
       <section class="orders-panel" data-orders-panel hidden aria-labelledby="orders-title">
-        <section class="catalog-panel" aria-labelledby="catalog-title">
-          <div>
-            <h2 id="catalog-title">Catálogo e inventario</h2>
-            <p>Descargá el CSV actual, editá precios, stock y productos, y volvé a importarlo. La importación valida todo antes de aplicar los cambios.</p>
-          </div>
-          <a class="button button--secondary" href="/api/admin/catalog.csv">Descargar catálogo CSV</a>
-          <form data-catalog-form>
-            <label for="catalog-file">Archivo CSV actualizado</label>
-            <input id="catalog-file" name="catalog" type="file" accept=".csv,text/csv" required>
-            <button class="button button--primary" type="submit">Validar e importar</button>
-          </form>
-          <p class="message" data-catalog-message role="status" aria-live="polite" hidden></p>
-        </section>
         <div class="orders-toolbar">
           <div>
             <h2 id="orders-title">Pedidos recientes</h2>
@@ -54,6 +47,242 @@
         <div class="orders-list" data-orders-list aria-live="polite"></div>
         <button class="button button--secondary load-more" type="button" data-load-more hidden>Cargar más pedidos</button>
       </section>
+
+      <section class="catalog-panel" data-catalog-panel hidden aria-labelledby="catalog-title">
+        <div class="catalog-toolbar">
+          <div>
+            <h2 id="catalog-title">Productos</h2>
+            <p>Creá, editá y publicá productos de a uno. Para cambios masivos, usá la importación CSV más abajo.</p>
+          </div>
+          <div class="catalog-toolbar__actions">
+            <a class="button button--secondary" href="/api/admin/catalog.csv">Descargar CSV</a>
+            <button class="button button--primary" type="button" data-product-new>Nuevo producto</button>
+          </div>
+        </div>
+
+        <p class="message" data-catalog-message role="status" aria-live="polite" hidden></p>
+
+        <!-- Formulario de producto (se muestra al crear o editar) -->
+        <form class="product-form" data-product-form hidden aria-labelledby="product-form-title">
+          <h3 id="product-form-title" data-product-form-title>Nuevo producto</h3>
+
+          <fieldset class="product-form__section">
+            <legend>Información básica</legend>
+            <div class="field-grid">
+              <div class="field field--wide">
+                <label for="product-name">Nombre del producto *</label>
+                <input id="product-name" name="name" type="text" required maxlength="180">
+                <p class="field-hint">Se muestra como título en la tienda.</p>
+              </div>
+              <div class="field">
+                <label for="product-sku">Código (SKU) *</label>
+                <input id="product-sku" name="sku" type="text" required maxlength="80" pattern="[a-zA-Z0-9_-]+">
+                <p class="field-hint">Letras, números, guiones. Ej.: COC-OLL-001</p>
+              </div>
+              <div class="field">
+                <label for="product-category">Categoría *</label>
+                <select id="product-category" name="category" required></select>
+              </div>
+              <div class="field">
+                <label for="product-subcategory">Subcategoría</label>
+                <input id="product-subcategory" name="subcategory" type="text" maxlength="80">
+              </div>
+              <div class="field">
+                <label for="product-slug">Enlace (slug)</label>
+                <input id="product-slug" name="slug" type="text" maxlength="180" pattern="[a-z0-9-]+">
+                <p class="field-hint">Si lo dejás vacío, se genera desde el nombre.</p>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="product-form__section">
+            <legend>Precio</legend>
+            <div class="field-grid">
+              <div class="field">
+                <label for="product-price">Precio de venta * (pesos, sin decimales)</label>
+                <input id="product-price" name="price" type="number" min="1" max="100000000" step="1" required inputmode="numeric">
+              </div>
+              <div class="field">
+                <label for="product-compare-price">Precio anterior (opcional)</label>
+                <input id="product-compare-price" name="comparePrice" type="number" min="0" max="100000000" step="1" inputmode="numeric">
+                <p class="field-hint">Si es mayor al precio de venta, la tienda muestra "Oferta -X%".</p>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="product-form__section">
+            <legend>Stock</legend>
+            <div class="field-grid">
+              <div class="field">
+                <label for="product-stock">Unidades disponibles *</label>
+                <input id="product-stock" name="stock" type="number" min="0" max="10000000" step="1" required inputmode="numeric">
+                <p class="field-hint" data-stock-hint>Es el stock físico disponible para vender.</p>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="product-form__section">
+            <legend>Descripción</legend>
+            <div class="field-grid">
+              <div class="field field--wide">
+                <label for="product-short-description">Descripción corta</label>
+                <textarea id="product-short-description" name="shortDescription" rows="2" maxlength="500"></textarea>
+                <p class="field-hint">Una o dos líneas; se ve en las tarjetas de la tienda.</p>
+              </div>
+              <div class="field field--wide">
+                <label for="product-description">Descripción completa</label>
+                <textarea id="product-description" name="description" rows="6"></textarea>
+                <p class="field-hint">Admite HTML simple como &lt;p&gt; o &lt;ul&gt;.&lt;li&gt;.</p>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="product-form__section">
+            <legend>Imágenes</legend>
+            <p class="field-hint">La primera imagen es la principal. Cada imagen necesita una ruta (ej.: img/products/olla.svg).</p>
+            <div class="image-rows" data-image-rows></div>
+            <button class="button button--secondary" type="button" data-image-add>Agregar imagen</button>
+          </fieldset>
+
+          <fieldset class="product-form__section">
+            <legend>Especificaciones</legend>
+            <p class="field-hint">Datos técnicos en pares concepto/valor. Ej.: Material — Aluminio.</p>
+            <div class="spec-rows" data-spec-rows></div>
+            <button class="button button--secondary" type="button" data-spec-add>Agregar especificación</button>
+          </fieldset>
+
+          <fieldset class="product-form__section">
+            <legend>Variantes</legend>
+            <p class="field-hint">Opciones como color o medida. Ej.: Color — Negro, Rojo.</p>
+            <div class="variant-rows" data-variant-rows></div>
+            <button class="button button--secondary" type="button" data-variant-add>Agregar variante</button>
+          </fieldset>
+
+          <fieldset class="product-form__section">
+            <legend>Etiquetas y publicación</legend>
+            <div class="field-grid">
+              <div class="field field--wide">
+                <label for="product-tags">Etiquetas</label>
+                <input id="product-tags" name="tags" type="text" maxlength="500">
+                <p class="field-hint">Separadas por coma. Ej.: nuevo, oferta, regalo.</p>
+              </div>
+              <div class="field field--checkbox">
+                <input id="product-featured" name="featured" type="checkbox">
+                <label for="product-featured">Destacado en el home</label>
+              </div>
+              <div class="field field--checkbox">
+                <input id="product-active" name="active" type="checkbox" checked>
+                <label for="product-active">Publicado (visible en la tienda)</label>
+              </div>
+            </div>
+          </fieldset>
+
+          <div class="product-form__actions">
+            <button class="button button--primary" type="submit">Guardar producto</button>
+            <button class="button button--secondary" type="button" data-product-cancel>Cancelar</button>
+            <button class="button button--danger" type="button" data-product-delete hidden>Eliminar producto</button>
+          </div>
+        </form>
+
+        <!-- Listado de productos -->
+        <div class="catalog-filters" data-catalog-filters>
+          <div class="field field--search">
+            <label for="filter-search">Buscar</label>
+            <input id="filter-search" type="search" placeholder="Nombre o código" data-filter-search>
+          </div>
+          <div class="field">
+            <label for="filter-category">Categoría</label>
+            <select id="filter-category" data-filter-category></select>
+          </div>
+          <div class="field">
+            <label for="filter-status">Estado</label>
+            <select id="filter-status" data-filter-status>
+              <option value="">Todos</option>
+              <option value="true">Publicados</option>
+              <option value="false">Borradores</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="filter-stock">Stock</label>
+            <select id="filter-stock" data-filter-stock>
+              <option value="">Todos</option>
+              <option value="in">Con stock</option>
+              <option value="out">Sin stock</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="filter-featured">Destacados</label>
+            <select id="filter-featured" data-filter-featured>
+              <option value="">Todos</option>
+              <option value="true">Sí</option>
+              <option value="false">No</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="filter-sort">Ordenar por</label>
+            <select id="filter-sort" data-filter-sort>
+              <option value="sortOrder">Orden de la tienda</option>
+              <option value="name">Nombre</option>
+              <option value="price">Precio</option>
+              <option value="stock">Stock</option>
+              <option value="createdAt">Fecha de alta</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="filter-order">Sentido</label>
+            <select id="filter-order" data-filter-order>
+              <option value="asc">Ascendente</option>
+              <option value="desc">Descendente</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="bulk-bar" data-bulk-bar hidden>
+          <span data-bulk-count>0 seleccionados</span>
+          <button class="button button--secondary" type="button" data-bulk-publish>Publicar seleccionados</button>
+          <button class="button button--secondary" type="button" data-bulk-unpublish>Ocultar seleccionados</button>
+        </div>
+
+        <div class="table-wrap">
+          <table class="catalog-table">
+            <caption class="visually-hidden">Listado de productos del catálogo</caption>
+            <thead>
+              <tr>
+                <th scope="col" class="catalog-table__check">
+                  <input type="checkbox" data-select-all aria-label="Seleccionar todos los productos visibles">
+                </th>
+                <th scope="col">Producto</th>
+                <th scope="col">Categoría</th>
+                <th scope="col">Precio</th>
+                <th scope="col">Stock</th>
+                <th scope="col">Estado</th>
+                <th scope="col">Acciones</th>
+              </tr>
+            </thead>
+            <tbody data-catalog-rows></tbody>
+          </table>
+        </div>
+        <p class="empty-state" data-catalog-empty hidden>No hay productos con esos filtros.</p>
+        <div class="pagination">
+          <button class="button button--secondary" type="button" data-page-prev>Anterior</button>
+          <span data-page-info></span>
+          <button class="button button--secondary" type="button" data-page-next>Siguiente</button>
+        </div>
+      </section>
+
+      <section class="catalog-panel csv-panel" data-csv-panel hidden aria-labelledby="csv-title">
+        <div>
+          <h2 id="csv-title">Importación masiva (CSV)</h2>
+          <p>Para cambiar muchos productos a la vez. Descargá el CSV, editalo en Excel o Google Sheets y volvé a importarlo. La importación valida todo antes de aplicar cambios.</p>
+        </div>
+        <form data-catalog-form>
+          <label for="catalog-file">Archivo CSV actualizado</label>
+          <input id="catalog-file" name="catalog" type="file" accept=".csv,text/csv" required>
+          <button class="button button--primary" type="submit">Validar e importar</button>
+        </form>
+        <p class="message" data-csv-message role="status" aria-live="polite" hidden></p>
+      </section>
+
       <noscript>Este panel necesita JavaScript habilitado.</noscript>
     </main>
   </body>

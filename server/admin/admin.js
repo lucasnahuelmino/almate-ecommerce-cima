@@ -1,18 +1,33 @@
+/* ==========================================================================
+   admin.js — Núcleo del panel: sesión, navegación, pedidos y CSV
+   --------------------------------------------------------------------------
+   La gestión de productos vive en catalog.js. Este archivo expone los
+   helpers compartidos (request, formato de fecha/precio) en window.AdminCore
+   y avisa con el evento "admin:ready" cuando hay sesión iniciada.
+   ========================================================================== */
 (() => {
   "use strict";
 
   const loginPanel = document.querySelector("[data-login-panel]");
   const loginForm = document.querySelector("[data-login-form]");
   const loginMessage = document.querySelector("[data-login-message]");
+  const adminNav = document.querySelector("[data-admin-nav]");
   const ordersPanel = document.querySelector("[data-orders-panel]");
-  const catalogForm = document.querySelector("[data-catalog-form]");
-  const catalogMessage = document.querySelector("[data-catalog-message]");
+  const catalogPanel = document.querySelector("[data-catalog-panel]");
+  const csvPanel = document.querySelector("[data-csv-panel]");
+  const navTabs = Array.from(document.querySelectorAll("[data-nav-tab]"));
+  const csvForm = document.querySelector("[data-catalog-form]");
+  const csvMessage = document.querySelector("[data-csv-message]");
   const ordersList = document.querySelector("[data-orders-list]");
   const ordersMessage = document.querySelector("[data-orders-message]");
   const logoutButton = document.querySelector("[data-logout]");
   const refreshButton = document.querySelector("[data-refresh]");
   const loadMoreButton = document.querySelector("[data-load-more]");
   const pageSize = 50;
+  const panelsBySection = {
+    orders: ordersPanel,
+    catalog: catalogPanel
+  };
   const fulfillmentLabels = {
     awaiting_confirmation: "Pendiente de preparación",
     preparing: "Preparando",
@@ -22,6 +37,7 @@
   let csrfToken = "";
   let offset = 0;
   let pendingCatalogCsv = "";
+  let currentSection = "orders";
 
   const request = async (url, options = {}) => {
     const headers = new Headers(options.headers || {});
@@ -46,27 +62,6 @@
     return result;
   };
 
-  const showLogin = (text = "") => {
-    loginPanel.hidden = false;
-    ordersPanel.hidden = true;
-    logoutButton.hidden = true;
-    loginMessage.textContent = text;
-    loginMessage.hidden = !text;
-  };
-
-  const showOrders = () => {
-    loginPanel.hidden = true;
-    ordersPanel.hidden = false;
-    logoutButton.hidden = false;
-  };
-
-  const addText = (parent, tag, text) => {
-    const element = document.createElement(tag);
-    element.textContent = text || "";
-    parent.appendChild(element);
-    return element;
-  };
-
   const formatPrice = (amount) => new Intl.NumberFormat("es-AR", {
     style: "currency",
     currency: "ARS",
@@ -77,6 +72,63 @@
     dateStyle: "medium",
     timeStyle: "short"
   }).format(new Date(value));
+
+  const addText = (parent, tag, text) => {
+    const element = document.createElement(tag);
+    element.textContent = text || "";
+    parent.appendChild(element);
+    return element;
+  };
+
+  /* ---------- Navegación por secciones ---------- */
+
+  const showSection = (section) => {
+    if (!panelsBySection[section]) return;
+    currentSection = section;
+    Object.entries(panelsBySection).forEach(([key, panel]) => {
+      panel.hidden = key !== section;
+    });
+    // El CSV es una herramienta más del catálogo: se muestra con esa sección.
+    csvPanel.hidden = section !== "catalog";
+    navTabs.forEach((tab) => {
+      if (tab.dataset.navTab === section) tab.setAttribute("aria-current", "page");
+      else tab.removeAttribute("aria-current");
+    });
+    if (section === "orders") {
+      loadOrders(false).catch((error) => {
+        ordersMessage.textContent = error.message;
+        ordersMessage.hidden = false;
+      });
+    } else {
+      // catalog.js escucha este evento para cargar el listado la primera vez.
+      window.dispatchEvent(new CustomEvent("admin:section", { detail: { section } }));
+    }
+  };
+
+  navTabs.forEach((tab) => {
+    tab.addEventListener("click", () => showSection(tab.dataset.navTab));
+  });
+
+  const showLogin = (text = "") => {
+    loginPanel.hidden = false;
+    adminNav.hidden = true;
+    ordersPanel.hidden = true;
+    catalogPanel.hidden = true;
+    csvPanel.hidden = true;
+    logoutButton.hidden = true;
+    loginMessage.textContent = text;
+    loginMessage.hidden = !text;
+  };
+
+  const showApp = () => {
+    loginPanel.hidden = true;
+    adminNav.hidden = false;
+    logoutButton.hidden = false;
+    showSection("orders");
+    window.dispatchEvent(new CustomEvent("admin:ready"));
+  };
+
+  /* ---------- Pedidos ---------- */
 
   const nextStatuses = (current) => {
     const transitions = {
@@ -223,12 +275,13 @@
     try {
       const session = await request("/api/admin/session");
       csrfToken = session.csrfToken;
-      showOrders();
-      await loadOrders(false);
+      showApp();
     } catch (error) {
       showLogin(error.status === 401 ? "" : error.message);
     }
   };
+
+  /* ---------- Eventos ---------- */
 
   loginForm.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -241,13 +294,7 @@
       });
       csrfToken = result.csrfToken;
       loginForm.reset();
-      showOrders();
-      try {
-        await loadOrders(false);
-      } catch (error) {
-        ordersMessage.textContent = error.message;
-        ordersMessage.hidden = false;
-      }
+      showApp();
     } catch (error) {
       loginMessage.textContent = error.message;
       loginMessage.hidden = false;
@@ -283,11 +330,11 @@
     });
   });
 
-  catalogForm.addEventListener("submit", async (event) => {
+  csvForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const submitButton = catalogForm.querySelector('button[type="submit"]');
+    const submitButton = csvForm.querySelector('button[type="submit"]');
     submitButton.disabled = true;
-    catalogMessage.hidden = true;
+    csvMessage.hidden = true;
     try {
       if (pendingCatalogCsv) {
         const result = await request("/api/admin/catalog/import", {
@@ -295,11 +342,13 @@
           body: pendingCatalogCsv,
           contentType: "text/csv"
         });
-        catalogMessage.textContent = `Importación aplicada: ${result.result.added} productos nuevos y ${result.result.updated} actualizados.`;
+        csvMessage.textContent = `Importación aplicada: ${result.result.added} productos nuevos y ${result.result.updated} actualizados.`;
         pendingCatalogCsv = "";
         submitButton.textContent = "Validar e importar";
+        // El catálogo cambió por CSV: pedimos que se recargue la lista.
+        window.dispatchEvent(new CustomEvent("admin:catalog-changed"));
       } else {
-        const file = catalogForm.elements.catalog.files[0];
+        const file = csvForm.elements.catalog.files[0];
         if (!file) return;
         if (file.size > 2 * 1024 * 1024) throw new Error("El CSV supera el límite de 2 MB.");
         pendingCatalogCsv = await file.text();
@@ -310,25 +359,36 @@
         });
         const result = preview.result;
         const names = result.products.map((product) => `${product.name} (${product.sku})`).join(", ");
-        catalogMessage.textContent = `CSV válido: ${result.total} productos; ${result.added} nuevos y ${result.updated} actualizados.${names ? ` Muestra: ${names}${result.total > result.products.length ? ", …" : ""}.` : ""} Presioná de nuevo para confirmar.`;
+        csvMessage.textContent = `CSV válido: ${result.total} productos; ${result.added} nuevos y ${result.updated} actualizados.${names ? ` Muestra: ${names}${result.total > result.products.length ? ", …" : ""}.` : ""} Presioná de nuevo para confirmar.`;
         submitButton.textContent = "Confirmar importación";
       }
-      catalogMessage.hidden = false;
+      csvMessage.hidden = false;
     } catch (error) {
       pendingCatalogCsv = "";
       submitButton.textContent = "Validar e importar";
-      catalogMessage.textContent = error.message;
-      catalogMessage.hidden = false;
+      csvMessage.textContent = error.message;
+      csvMessage.hidden = false;
     } finally {
       submitButton.disabled = false;
     }
   });
 
-  catalogForm.elements.catalog.addEventListener("change", () => {
+  csvForm.elements.catalog.addEventListener("change", () => {
     pendingCatalogCsv = "";
-    catalogForm.querySelector('button[type="submit"]').textContent = "Validar e importar";
-    catalogMessage.hidden = true;
+    csvForm.querySelector('button[type="submit"]').textContent = "Validar e importar";
+    csvMessage.hidden = true;
   });
+
+  /* ---------- Helpers compartidos con catalog.js ---------- */
+
+  window.AdminCore = {
+    request,
+    addText,
+    formatPrice,
+    formatDate,
+    get csrfToken() { return csrfToken; },
+    get currentSection() { return currentSection; }
+  };
 
   resumeSession();
 })();

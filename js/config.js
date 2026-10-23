@@ -79,9 +79,18 @@ window.STORE_CONFIG = {
     transferDiscountPercent: 10                     // Descuento por transferencia bancaria
   },
 
-  /* ---------- Catálogo remoto (dejar vacío mientras no haya API pública) ---------- */
+  /* ---------- Catálogo remoto ----------
+     Mientras esté vacío, la tienda usa el catálogo embebido en
+     js/data/products.js. Al apuntar a la API del backend, la tienda lee
+     productos y categorías desde el servidor (lo que cargues en el panel
+     de administración es lo que se vende).
+
+     DEMO LOCAL: apunta al backend corriendo en tu máquina. Cuando publiques
+     la tienda, cambiá esta URL por la del servidor en HTTPS (p. ej.
+     https://api.tu-dominio.com) y volvé a desplegar. Si el backend no está
+     accesible, la tienda muestra un aviso y no lista productos. */
   catalog: {
-    apiBaseUrl: ""
+    apiBaseUrl: "http://127.0.0.1:3000"
   },
 
   /* ---------- Cupones de descuento (estructura lista para usar) ----------

@@ -1,6 +1,10 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const Database = require("better-sqlite3");
+const {
+  validateProductLists,
+  validateProductTexts
+} = require("./services/product-rules");
 
 const schema = `
   CREATE TABLE IF NOT EXISTS categories (
@@ -527,25 +531,8 @@ const validateCatalogProducts = (database, products) => {
     if (product.stock < reserved) {
       throw Object.assign(new Error(`El stock de "${product.name}" no puede ser menor que las unidades reservadas (${reserved}).`), { status: 409 });
     }
-    if (!Array.isArray(product.variants) || product.variants.some((variant) =>
-      !variant || typeof variant.id !== "string" || typeof variant.label !== "string" ||
-      !Array.isArray(variant.options) || variant.options.some((option) => typeof option !== "string"))) {
-      throw Object.assign(new Error(`Las variantes de "${product.name}" no tienen un formato válido.`), { status: 400 });
-    }
-    if (!Array.isArray(product.specs) || product.specs.some((spec) =>
-      !spec || typeof spec.label !== "string" || typeof spec.value !== "string")) {
-      throw Object.assign(new Error(`Las especificaciones de "${product.name}" no tienen un formato válido.`), { status: 400 });
-    }
-    if (typeof product.createdAt !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(product.createdAt) ||
-        typeof product.description !== "string" || product.description.length > 20000 ||
-        typeof product.shortDescription !== "string" || product.shortDescription.length > 500 ||
-        !Array.isArray(product.images) || product.images.length < 1 || product.images.length > 20 ||
-        product.images.some((image) => typeof image !== "string" || image.length > 500 ||
-          image.includes("\\") || /^javascript:/i.test(image) || /^data:/i.test(image) ||
-          image.split("/").includes("..")) ||
-        !Array.isArray(product.tags) || product.tags.some((tag) => typeof tag !== "string" || tag.length > 40)) {
-      throw Object.assign(new Error(`La fecha, descripción, imágenes o etiquetas de "${product.name}" exceden el formato permitido.`), { status: 400 });
-    }
+    validateProductLists(product);
+    validateProductTexts(product);
     if (old) updated += 1;
     else added += 1;
   });
@@ -582,6 +569,233 @@ const importCatalogProducts = (database, products) => {
   return importProducts();
 };
 
+/* ==========================================================================
+   Gestión individual de productos (panel de administración)
+   --------------------------------------------------------------------------
+   Semántica de stock (igual que en la importación CSV):
+   • data.stock  = stock físico TOTAL (incluye vendido y reservado).
+   • vendido     = suma de inventory_movements.
+   • reservado   = suma de inventory_reservations activas.
+   • La panel muestra y edita "stock disponible de góndola" = data.stock − vendido.
+   Al guardar, se persiste data.stock = valorRecibido + vendido.
+   ========================================================================== */
+
+const adminProductQuery = `
+  SELECT p.id, p.slug, p.sku, p.category_id, p.active, p.sort_order, p.data,
+    COALESCE((SELECT SUM(m.quantity) FROM inventory_movements m WHERE m.product_id = p.id), 0) AS sold,
+    COALESCE((SELECT SUM(r.quantity) FROM inventory_reservations r
+      WHERE r.product_id = p.id AND r.expires_at > ?), 0) AS reserved
+  FROM products p`;
+
+const rowToAdminProduct = (row) => {
+  const product = JSON.parse(row.data);
+  const stockOnHand = Math.max(0, Number(product.stock) - row.sold);
+  return {
+    id: row.id,
+    sku: row.sku,
+    slug: row.slug,
+    name: product.name,
+    category: row.category_id,
+    subcategory: product.subcategory || "",
+    price: product.price,
+    comparePrice: product.comparePrice == null ? null : product.comparePrice,
+    stock: stockOnHand,
+    sold: row.sold,
+    reserved: row.reserved,
+    active: Boolean(row.active),
+    featured: Boolean(product.featured),
+    tags: Array.isArray(product.tags) ? product.tags : [],
+    images: Array.isArray(product.images) ? product.images : [],
+    shortDescription: product.shortDescription || "",
+    description: product.description || "",
+    specs: Array.isArray(product.specs) ? product.specs : [],
+    variants: Array.isArray(product.variants) ? product.variants : [],
+    createdAt: product.createdAt,
+    sortOrder: row.sort_order
+  };
+};
+
+/** Lista paginada con filtros, orden y búsqueda para el panel. */
+const listCatalogProductsAdminPaged = (database, filters, now = new Date().toISOString()) => {
+  const {
+    search = "",
+    category = "",
+    active = null,
+    featured = null,
+    stockFilter = "",
+    minPrice = null,
+    maxPrice = null,
+    sort = "sortOrder",
+    order = "asc",
+    limit = 50,
+    offset = 0
+  } = filters;
+
+  const conditions = [];
+  const params = [now];
+  if (search) {
+    conditions.push("(LOWER(p.data LIKE ? OR p.sku LIKE ?))");
+    const term = `%${String(search).toLowerCase()}%`;
+    params.push(term, term);
+  }
+  if (category) {
+    conditions.push("p.category_id = ?");
+    params.push(category);
+  }
+  if (active !== null) {
+    conditions.push("p.active = ?");
+    params.push(active ? 1 : 0);
+  }
+
+  const where = conditions.length ? ` WHERE ${conditions.join(" AND ")}` : "";
+  const rows = database.prepare(`${adminProductQuery}${where}`).all(...params)
+    .map(rowToAdminProduct);
+
+  let products = rows;
+  if (featured !== null) products = products.filter((product) => product.featured === featured);
+  if (stockFilter === "out") products = products.filter((product) => product.stock <= 0);
+  if (stockFilter === "in") products = products.filter((product) => product.stock > 0);
+  if (minPrice !== null) products = products.filter((product) => product.price >= minPrice);
+  if (maxPrice !== null) products = products.filter((product) => product.price <= maxPrice);
+
+  const direction = order === "desc" ? -1 : 1;
+  const comparators = {
+    name: (a, b) => a.name.localeCompare(b.name, "es"),
+    price: (a, b) => a.price - b.price,
+    stock: (a, b) => a.stock - b.stock,
+    createdAt: (a, b) => String(a.createdAt).localeCompare(String(b.createdAt)),
+    sortOrder: (a, b) => a.sortOrder - b.sortOrder
+  };
+  const compare = comparators[sort] || comparators.sortOrder;
+  products.sort((a, b) => direction * compare(a, b));
+
+  const total = products.length;
+  return {
+    total,
+    products: products.slice(offset, offset + limit)
+  };
+};
+
+/** Un producto completo para el formulario del panel. */
+const getProductForAdmin = (database, id, now = new Date().toISOString()) => {
+  const row = database.prepare(`${adminProductQuery} WHERE p.id = ?`).get(now, id);
+  return row ? rowToAdminProduct(row) : null;
+};
+
+/** Un producto por SKU (para crear duplicados o buscar desde formularios). */
+const getProductBySkuForAdmin = (database, sku, now = new Date().toISOString()) => {
+  const row = database.prepare(`${adminProductQuery} WHERE p.sku = ?`).get(now, sku);
+  return row ? rowToAdminProduct(row) : null;
+};
+
+/** Cuenta cuántos productos hay, para saber el próximo sort_order. */
+const nextProductSortOrder = (database) => {
+  const row = database.prepare("SELECT COALESCE(MAX(sort_order), 0) + 1 AS next FROM products").get();
+  return row.next;
+};
+
+/**
+ * Crea o actualiza un producto validado en una transacción.
+ * `product` debe venir ya validado y con data.stock como total físico.
+ * El JSON guardado conserva SOLO los campos del catálogo (sin sortOrder,
+ * sold ni reserved, que son datos del panel y no del producto).
+ */
+const upsertProductRow = (database, product) => {
+  const stored = {
+    id: product.id,
+    slug: product.slug,
+    sku: product.sku,
+    name: product.name,
+    category: product.category,
+    subcategory: product.subcategory || "",
+    price: product.price,
+    comparePrice: product.comparePrice == null ? null : product.comparePrice,
+    stock: product.stock,
+    images: product.images,
+    shortDescription: product.shortDescription || "",
+    description: product.description || "",
+    specs: product.specs,
+    variants: product.variants,
+    tags: product.tags,
+    featured: Boolean(product.featured),
+    active: Boolean(product.active),
+    createdAt: product.createdAt
+  };
+  const upsert = database.transaction(() => {
+    database.prepare(
+      `INSERT INTO products (id, slug, sku, category_id, active, sort_order, data)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         slug = excluded.slug,
+         sku = excluded.sku,
+         category_id = excluded.category_id,
+         active = excluded.active,
+         sort_order = excluded.sort_order,
+         data = excluded.data`
+    ).run(
+      product.id,
+      product.slug,
+      product.sku,
+      product.category,
+      product.active ? 1 : 0,
+      product.sortOrder,
+      JSON.stringify(stored)
+    );
+  });
+  upsert();
+};
+
+/** Marca un producto como activo o inactivo (columna y JSON se mantienen iguales). */
+const setCatalogProductActive = (database, id, active) => {
+  const row = database.prepare("SELECT data FROM products WHERE id = ?").get(id);
+  if (!row) return null;
+  const product = JSON.parse(row.data);
+  product.active = Boolean(active);
+  database.transaction(() => {
+    database.prepare("UPDATE products SET active = ?, data = ? WHERE id = ?")
+      .run(active ? 1 : 0, JSON.stringify(product), id);
+  })();
+  return database.prepare("SELECT id FROM products WHERE id = ?").get(id);
+};
+
+/** Devuelve qué identificadores (id, sku, slug) ya están tomados por OTRO producto. */
+const catalogProductConflicts = (database, { id = "", sku = "", slug = "", excludeId = "" }) => {
+  const row = database.prepare(
+    `SELECT
+       MAX(CASE WHEN id = ? AND id <> ? THEN 1 ELSE 0 END) AS id_taken,
+       MAX(CASE WHEN sku = ? AND id <> ? THEN 1 ELSE 0 END) AS sku_taken,
+       MAX(CASE WHEN slug = ? AND id <> ? THEN 1 ELSE 0 END) AS slug_taken
+     FROM products`
+  ).get(id, excludeId, sku, excludeId, slug, excludeId);
+  return {
+    idTaken: Boolean(row.id_taken),
+    skuTaken: Boolean(row.sku_taken),
+    slugTaken: Boolean(row.slug_taken)
+  };
+};
+
+/** true si la categoría existe en el catálogo de categorías. */
+const categoryExists = (database, categoryId) =>
+  Boolean(database.prepare("SELECT 1 FROM categories WHERE id = ?").get(categoryId));
+
+/** Borra un producto SOLO si no tiene ventas ni reservas. */
+const deleteProductForAdmin = (database, id) => {
+  const sold = database.prepare(
+    "SELECT COUNT(*) AS count FROM inventory_movements WHERE product_id = ?"
+  ).get(id).count;
+  const reserved = database.prepare(
+    "SELECT COUNT(*) AS count FROM inventory_reservations WHERE product_id = ?"
+  ).get(id).count;
+  if (sold > 0 || reserved > 0) {
+    throw Object.assign(
+      new Error("Este producto tiene ventas o reservas registradas; desactivalo en lugar de borrarlo."),
+      { status: 409 }
+    );
+  }
+  const result = database.prepare("DELETE FROM products WHERE id = ?").run(id);
+  return result.changes === 1;
+};
+
 module.exports = {
   openDatabase,
   seedCatalog,
@@ -599,5 +813,14 @@ module.exports = {
   cancelWhatsappOrder,
   listCatalogProductsForAdmin,
   importCatalogProducts,
-  validateCatalogProducts
+  validateCatalogProducts,
+  listCatalogProductsAdminPaged,
+  getProductForAdmin,
+  getProductBySkuForAdmin,
+  nextProductSortOrder,
+  upsertProductRow,
+  setCatalogProductActive,
+  catalogProductConflicts,
+  categoryExists,
+  deleteProductForAdmin
 };

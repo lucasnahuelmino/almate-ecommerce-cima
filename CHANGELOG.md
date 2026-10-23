@@ -5,6 +5,26 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
 ---
 
+## [1.10.0] — 2026-10-23
+
+### Panel de administración — Etapa 1: catálogo visual y edición individual
+
+#### Agregado
+- Navegación por secciones en `/admin` (Pedidos · Catálogo) y tabla de productos con miniatura, búsqueda en vivo, filtros (categoría, estado, stock, destacados), orden, paginación y selección múltiple con acciones masivas (publicar/ocultar seleccionados).
+- Formulario visual de producto por secciones (Información básica · Precio · Stock · Descripción · Imágenes · Especificaciones · Variantes · Etiquetas y publicación) sin JSON a mano: filas para agregar, quitar y reordenar imágenes (con vista previa), especificaciones y variantes.
+- Acciones por fila: Editar, Duplicar (copia inactiva con SKU/Slug nuevos), Ocultar/Publicar y Eliminar (solo sin historial; con ventas o reservas responde 409 y sugiere desactivar).
+- Endpoints autenticados (sesión + same-origin + CSRF): `GET/POST /api/admin/products`, `GET/PATCH/DELETE /api/admin/products/:id`, `POST /api/admin/products/:id/duplicate`, `POST /api/admin/products/:id/archive`, `GET /api/admin/categories`.
+- Reglas de validación compartidas entre la importación CSV y el panel (`server/services/product-rules.js`) y servicio de edición individual (`server/services/catalog-manage.js`), con semántica de stock respetada (góndola vs. vendido; nunca por debajo de reservas activas).
+- El backend sirve `/img` en solo lectura para que las miniaturas y fotos de productos carguen con la CSP estricta del panel (`img-src 'self'`).
+
+#### Cambiado
+- La tienda pública quedó conectada al backend en local: `js/config.js` → `catalog.apiBaseUrl: "http://127.0.0.1:3000"` (cambiar al publicar; documentado en el archivo y en `server/.env.example` con el CORS local).
+- El panel administrativo usa su propio parser JSON de 128 kb (el global de 32 kb no aplica a `/api/admin/`) para descripciones largas.
+
+#### Verificado
+- 41/41 pruebas del backend pasaron (30 existentes + 11 nuevas en `admin-catalog.test.js`), incluida la importación CSV que conserva compatibilidad.
+- Prueba manual de humo contra el servidor real (login, listado, creación, edición, duplicado, archivado, borrado, validaciones) y verificación en navegador del listado y el formulario.
+
 ## [1.9.0] — 2026-10-22
 
 ### Administración de catálogo, inventario y pedidos por WhatsApp

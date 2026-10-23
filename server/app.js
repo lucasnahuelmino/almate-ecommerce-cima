@@ -1,5 +1,6 @@
 const cors = require("cors");
 const express = require("express");
+const path = require("node:path");
 const { createAdminAuth } = require("./admin-auth");
 const {
   adminDirectory,
@@ -38,7 +39,16 @@ const createApp = ({
 
   app.disable("x-powered-by");
   app.set("trust proxy", trustProxyHops);
-  app.use(express.json({ limit: "32kb", strict: true }));
+  const jsonParser = express.json({ limit: "32kb", strict: true });
+  app.use((request, response, next) => {
+    if (request.path.startsWith("/api/admin/")) {
+      // El panel de administración aplica su propio parser JSON, con un
+      // límite mayor para poder editar descripciones largas de productos.
+      next();
+      return;
+    }
+    jsonParser(request, response, next);
+  });
   app.use((request, response, next) => {
     if (request.path === "/admin" || request.path.startsWith("/admin/") ||
         request.path.startsWith("/api/admin/")) {
@@ -52,6 +62,11 @@ const createApp = ({
     database.prepare("SELECT 1").get();
     response.json({ status: "ok", database: "ok" });
   });
+
+  // Imágenes del catálogo (miniaturas del panel y fotos de productos).
+  // Son archivos públicos del frontend; se sirven desde el mismo origen
+  // para respetar la CSP estricta del panel (img-src 'self').
+  app.use("/img", express.static(path.join(__dirname, "..", "img")));
 
   app.get("/api/products", (_request, response) => {
     response.json({

@@ -444,11 +444,17 @@ test("admin dashboard requires authentication, lists minimal order data and audi
   assert.equal(page.status, 200);
   assert.match(page.headers.get("content-security-policy"), /frame-ancestors 'none'/);
   assert.equal(page.headers.get("cache-control"), "no-store");
-  assert.match(await page.text(), /Pedidos — Administración CIMA/);
+  const pageHtml = await page.text();
+  assert.match(pageHtml, /<title>Administración CIMA<\/title>/);
+  assert.match(pageHtml, /data-nav-tab="orders"/);
+  assert.match(pageHtml, /data-nav-tab="catalog"/);
   const script = await fetch(`${baseUrl}/admin/admin.js`);
   assert.equal(script.status, 200);
   assert.equal(script.headers.get("cache-control"), "no-store");
   assert.match(await script.text(), /X-CSRF-Token/);
+  const catalogScript = await fetch(`${baseUrl}/admin/catalog.js`);
+  assert.equal(catalogScript.status, 200);
+  assert.equal(catalogScript.headers.get("cache-control"), "no-store");
   const stylesheet = await fetch(`${baseUrl}/admin/admin.css`);
   assert.equal(stylesheet.status, 200);
 
