@@ -2,7 +2,7 @@
 
 Mientras no tengas fotos propias, el sitio muestra **imágenes placeholder**: archivos `.svg` con un dibujito simple, el nombre del producto y la leyenda "Foto pendiente".
 
-**Cómo usar tus fotos:** subí un archivo con **el nombre exacto** de la columna "Archivo a subir" dentro de la carpeta indicada. Nada más. Cuando conectemos los productos (Etapa 2), el sitio va a usar automáticamente las fotos que estén con esos nombres.
+**Cómo usar tus fotos:** subí el archivo a la carpeta indicada y actualizá la ruta en `images` del producto correspondiente en `js/data/products.js`. Copiar una foto con el nombre sugerido no la conecta automáticamente: el catálogo actualmente apunta a archivos `.svg`. Consultá el [README](./README.md#cambiar-fotos) para los pasos.
 
 ## Recomendaciones de foto
 
@@ -62,10 +62,8 @@ Mientras no tengas fotos propias, el sitio muestra **imágenes placeholder**: ar
 |-----|-----------|
 | Logo | Reemplazá el contenido de `assets/logo.svg` por el tuyo (misma ruta), o subí `logo.png` en la misma carpeta y avisame para cambiar la referencia. |
 | Ícono del navegador (favicon) | Reemplazá `assets/favicon.svg` por el tuyo. |
-| Foto para compartir en redes (og-image) | La generamos en la Etapa 10 (SEO). |
+| Foto para compartir en redes (og-image) | Pendiente hasta definir el dominio y preparar los metadatos SEO. |
 
 ## ⚠️ Nota importante
 
-Si subís una foto con otro nombre o con una extensión distinta a la de la tabla, el sitio no la va a mostrar hasta que la referenciemos en `js/data/products.js` (eso lo hacemos en la Etapa 2, y te dejo paso a paso en el README).
-
-**Truco:** cuando tengas las fotos listas, avisame y yo me encargo de conectarlas. Solo necesito que las dejes en la carpeta correcta con el nombre de la tabla.
+Los nombres de esta lista son sugerencias: no están conectados al catálogo hasta actualizar las rutas `images` de cada producto en `js/data/products.js`. Para hacerlo, seguí el [paso a paso del README](./README.md#cambiar-fotos). Verificá que los nombres, la extensión y las rutas coincidan exactamente.

@@ -18,6 +18,10 @@
   margin: 0; /* Quita márgenes por defecto de <p>, <h1>, etc. */
 }
 
+[hidden] {
+  display: none !important;
+}
+
 html {
   -webkit-text-size-adjust: 100%; /* Evita el zoom automático raro en iOS */
   scroll-behavior: smooth;

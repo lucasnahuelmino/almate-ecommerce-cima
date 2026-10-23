@@ -19,18 +19,19 @@ window.STORE_CONFIG = {
   /* ---------- Marca ---------- */
   brand: {
     name: "CIMA",
-    tagline: "Bazar, hogar y cocina",             // Frase corta bajo el logo
-    logo: "assets/logo.svg",                     // Ruta del logo
-    favicon: "assets/favicon.svg"                // Ícono del navegador
+    tagline: "Bazar, hogar y cocina",
+    logo: "assets/logo.svg",
+    favicon: "assets/favicon.svg"
   },
 
-  /* ---------- Contacto (se muestra en header, footer y checkout) ---------- */
+  /* ---------- Contacto (se muestra en header, footer y checkout) ----------
+     Si un campo queda vacío, la interfaz lo oculta automáticamente. */
   contact: {
     whatsapp: "5491134761743",                   // Formato internacional, sin "+" ni espacios
     email: "cima.home@gmail.com",
     instagram: "cima.hogar",                     // Solo el usuario, sin @
-    address: "",                                 // ⚠️ Pendiente: dirección del local
-    schedule: ""                                 // ⚠️ Pendiente: horario de atención
+    address: "",                                 // Vacío a propósito: no hay local a la calle
+    schedule: "De 9 a 18 hs"
   },
 
   /* ---------- Moneda y formato (es-AR: $ 89.900) ---------- */
@@ -56,7 +57,7 @@ window.STORE_CONFIG = {
     freeShippingFrom: 80000,                        // Compra mínima para envío gratis (ARS)
     pickup: {
       enabled: true,
-      label: "Retiro en local",
+      label: "Retiro coordinado",                   // Sin local a la calle: se acuerda el punto por WhatsApp
       cost: 0
     },
     zones: [
@@ -96,11 +97,12 @@ window.STORE_CONFIG = {
   },
 
   /* ---------- Datos legales (visibles en footer — obligatorio en Argentina) ----------
+     address vacío a propósito: el negocio no tiene domicilio fiscal público.
      Validar estos textos con contador/abogado. */
   legal: {
     businessName: "Lucas Nahuel Miño",
     cuit: "20-36296907-8",
-    address: ""                                   // ⚠️ Pendiente: domicilio fiscal
+    address: ""
   },
 
   /* ---------- Créditos del pie ---------- */

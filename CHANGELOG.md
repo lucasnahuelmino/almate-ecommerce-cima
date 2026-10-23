@@ -5,6 +5,146 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
 ---
 
+## [1.4.0] — 2026-10-22
+
+### Etapa 11 — README y entrega de Fase 1
+
+#### Agregado
+- Guía para abrir y probar la tienda, editar productos, categorías y configuración, cambiar imágenes, y desplegarla como sitio estático.
+- Límites de pagos, pedidos, datos del comprador y requisitos antes de publicar.
+
+#### Cambiado
+- `LISTA-IMAGENES.md` ahora aclara que las fotos deben enlazarse manualmente desde `products.js`; los nombres sugeridos no reemplazan los SVG por sí solos.
+- La documentación SEO deja explícito que el sitemap y las URLs canónicas esperan a que se defina el dominio.
+
+## [1.3.0] — 2026-10-22
+
+### Etapa 10 — Pulido y QA
+
+#### Agregado
+- Control accesible de modo claro/oscuro, con preferencia del sistema como valor inicial y selección guardada para visitas siguientes.
+- Carga prioritaria y decodificación asíncrona para las imágenes principales de la home, el catálogo y la ficha de producto.
+- En `README.md`, nota para generar el sitemap una vez definido el dominio público.
+
+#### Verificado
+- Navegación sin errores y responsive sin desbordamiento en páginas principales e informativas, en móvil y escritorio.
+- Compatibilidad del control de tema con `file://`, navegación entre páginas y persistencia de preferencias.
+
+#### Pendiente
+- `sitemap.xml` y URL canónica: requieren que se defina el dominio y hosting públicos.
+
+## [1.2.0] — 2026-10-22
+
+### Etapa 9 — Páginas de soporte y legales
+
+#### Agregado
+- `contacto.html` con canales de contacto y horarios tomados de la configuración.
+- `envios-y-devoluciones.html` con opciones y costos estimados derivados de `STORE_CONFIG.shipping`.
+- `terminos.html` y `privacidad.html` como plantillas informativas que aclaran sus límites y requieren revisión profesional.
+- `arrepentimiento.html` con un formulario que prepara una solicitud por WhatsApp y un enlace alternativo si se bloquean ventanas emergentes.
+- `404.html` con navegación para regresar al inicio o al catálogo.
+- `js/pages/support.js` para presentar los datos de contacto y entrega configurados y preparar la solicitud sin guardar datos personales.
+
+#### Cambiado
+- El checkout ahora enlaza a los términos y a la política de privacidad.
+
+## [1.1.0] — 2026-10-22
+
+### Etapa 8 — Checkout (Fase 1)
+
+#### Agregado
+- `checkout.html` y `js/pages/checkout.js` con datos del comprador, validaciones de email/teléfono/DNI/código postal, selección de entrega y forma de pago, y resumen de importes.
+- `js/payments/provider.js` y `js/payments/whatsapp.js` para crear pedidos mediante una interfaz de proveedor, con transferencia y descuento configurable sin publicar datos bancarios.
+- `js/core/orders.js`, `gracias.html` y `js/pages/thanks.js` para conservar y consultar el comprobante pendiente, sin guardar datos personales del cliente en el navegador.
+- Envío de productos, variantes, datos de contacto, entrega, pago y total estimado en la consulta de WhatsApp.
+
+#### Cambiado
+- Carrito y mini-carrito conducen al checkout; el comprobante aclara que el pedido queda pendiente de coordinación y no representa un pago confirmado.
+
+## [1.0.0] — 2026-10-22
+
+### Etapa 7 — Carrito
+
+#### Agregado
+- `js/core/cart.js` con carrito persistente en `localStorage`, variantes como líneas independientes, validación de cantidades/stock, sincronización entre pestañas y aviso de cambios de precio o disponibilidad.
+- `carrito.html` y `js/pages/cart.js` para revisar, actualizar y quitar productos, ver el subtotal y el progreso al envío gratis, y consultar el pedido por WhatsApp.
+- Acciones para agregar productos desde la ficha y editar cantidades o quitar productos desde el mini-carrito.
+
+#### Cambiado
+- El drawer comparte el subtotal y el progreso al envío gratis; el contador del header se actualiza al instante.
+- Se retiró el enlace al checkout todavía inexistente; el checkout completo se incorpora en la Etapa 8.
+
+## [0.9.0] — 2026-10-22
+
+### Etapa 6 — Detalle de producto
+
+#### Agregado
+- `producto.html` con ficha responsive, galería, selector de variantes y cantidad, stock, envío estimado, descripción, especificaciones, productos relacionados y datos estructurados Product/BreadcrumbList.
+- `js/pages/product.js` para cargar la ficha por `?slug=`, actualizar metadatos, controlar la galería y calcular el envío según la configuración.
+- Tratamiento de descripciones con etiquetas permitidas para evitar insertar HTML arbitrario en la ficha.
+- Estado claro para enlaces de producto inexistentes o no disponibles.
+- Regla global para que los componentes con el atributo `hidden` permanezcan ocultos aunque sus estilos declaren `display`.
+
+#### Cambiado
+- Las tarjetas del catálogo y de la home ahora llevan al detalle del producto.
+- La consulta por WhatsApp desde la ficha incluye SKU, cantidad y variantes seleccionadas.
+
+---
+
+## [0.8.0] — 2026-10-22
+
+### Etapa 5 — Catálogo
+
+#### Agregado
+- `tienda.html` con búsqueda, sugerencias, categorías, filtros por precio/disponibilidad/etiquetas, orden, estado vacío y paginación.
+- `js/core/catalog.js` para búsqueda, filtros, ofertas y orden reutilizables sin manipular el DOM.
+- `js/pages/shop.js` para representar el catálogo y reflejar los filtros en la URL.
+- Estilos responsive del catálogo en `css/pages.css`.
+
+#### Cambiado
+- Las tarjetas de categorías de la home enlazan al catálogo con su categoría seleccionada.
+- La navegación distingue el listado general de la vista de ofertas para marcar una sola sección activa.
+
+#### Pendiente
+- La página de detalle de producto se incorpora en la Etapa 6; mientras tanto, cada tarjeta permite consultar el artículo por WhatsApp.
+- El agregado al carrito se incorpora en la Etapa 7.
+
+---
+
+## [0.7.0] — 2026-10-22
+
+### Etapa 4 — Home
+
+#### Agregado
+- Portada con hero, categorías, productos destacados y ofertas tomadas del catálogo, beneficios de compra, presentación de CIMA, preguntas frecuentes y enlaces de consulta por WhatsApp/Instagram.
+- `js/pages/home.js` para presentar categorías y productos activos desde los datos existentes y completar precios/beneficios configurables sin dependencias externas.
+- `css/pages.css` con estilos responsive para la página de inicio.
+
+#### Cambiado
+- `index.html` carga los datos del catálogo y el contenido específico de la home.
+
+#### Pendiente
+- No se agregaron testimonios inventados ni un formulario de newsletter sin servicio de suscripción.
+
+---
+
+## [0.6.0] — 2026-10-22
+
+### Etapa 3 — Layout global
+
+#### Agregado
+- `index.html` como primera página navegable, con header adaptable, buscador, navegación, barra de beneficios, footer legal/de contacto y drawer del mini-carrito.
+- Conexión de los datos de marca y contacto desde `STORE_CONFIG`; los campos vacíos se ocultan y el logo ahora toma su ruta desde config.
+- Comportamiento de apertura/cierre del menú y carrito, manejo de foco accesible, búsqueda que prepara la URL del catálogo y contador preparado para la etapa del carrito.
+- Portada provisoria hasta construir la home en la Etapa 4.
+
+#### Cambiado
+- `css/layout.css`: estilos responsive de la estructura global y de la portada provisoria; el resumen del carrito respeta el estado oculto.
+- `js/ui/header.js` y `js/ui/mini-cart.js`: estado accesible, cierre con Escape y foco contenido/restaurado en los paneles.
+- `js/ui/layout.js`: soporte para cargar imágenes desde rutas configuradas con `data-store-src`, texto en el enlace de email y ocultamiento de opciones desactivadas.
+
+---
+
 ## [0.5.0] — 2026-10-21
 
 ### Datos de contacto y legales reales

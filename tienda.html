@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Explorá el catálogo de CIMA: bazar, hogar y cocina. Encontrá productos para disfrutar cada rincón de tu casa.">
+  <meta name="theme-color" content="#FAF7F2">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Tienda — CIMA">
+  <meta property="og:description" content="Explorá el catálogo de bazar, hogar y cocina de CIMA.">
+  <title>Tienda — CIMA</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Inter:wght@400..700&display=swap">
+
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/pages.css">
+
+  <script defer src="js/config.js"></script>
+  <script defer src="js/core/utils.js"></script>
+  <script defer src="js/data/categories.js"></script>
+  <script defer src="js/data/products.js"></script>
+  <script defer src="js/core/cart.js"></script>
+  <script defer src="js/core/catalog.js"></script>
+  <script defer src="js/pages/shop.js"></script>
+  <script defer src="js/ui/layout.js"></script>
+  <script defer src="js/ui/header.js"></script>
+  <script defer src="js/ui/mini-cart.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#contenido">Saltar al contenido</a>
+
+  <section class="benefits-bar" aria-label="Beneficios de compra">
+    <div class="container benefits-bar__inner">
+      <span class="benefits-bar__item">Envíos a todo el país</span>
+      <span class="benefits-bar__item" data-store="payments.installments.text"></span>
+      <span class="benefits-bar__item">Atención cercana por WhatsApp</span>
+    </div>
+  </section>
+
+  <header class="site-header" id="site-header">
+    <div class="container site-header__inner">
+      <a class="brand" href="index.html" aria-label="CIMA, ir al inicio">
+        <img class="brand__logo" data-store-src="brand.logo" src="assets/logo.svg" alt="" data-store-alt="brand.name">
+        <span class="brand__tagline" data-store="brand.tagline"></span>
+      </a>
+
+      <nav class="main-nav" aria-label="Navegación principal">
+        <ul class="main-nav__list">
+          <li><a class="main-nav__link" href="index.html">Inicio</a></li>
+          <li><a class="main-nav__link" href="tienda.html">Tienda</a></li>
+          <li><a class="main-nav__link" href="tienda.html?tag=oferta">Ofertas</a></li>
+          <li><a class="main-nav__link" href="contacto.html">Contacto</a></li>
+        </ul>
+      </nav>
+
+      <div class="header-actions">
+        <form class="header-search js-search-form" role="search" action="tienda.html">
+          <label class="sr-only" for="search-desktop">Buscar productos</label>
+          <svg class="header-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
+            <circle cx="10.8" cy="10.8" r="6.8"></circle>
+            <path d="m16 16 4.5 4.5"></path>
+          </svg>
+          <input class="header-search__input" id="search-desktop" name="q" type="search" placeholder="Buscar productos">
+        </form>
+
+        <button class="btn btn--ghost btn--icon search-toggle" type="button" data-search-toggle aria-expanded="false" aria-controls="search-mobile" aria-label="Mostrar búsqueda">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
+            <circle cx="10.8" cy="10.8" r="6.8"></circle>
+            <path d="m16 16 4.5 4.5"></path>
+          </svg>
+        </button>
+
+        <button class="btn btn--ghost btn--icon cart-btn" type="button" data-cart-open aria-label="Abrir carrito">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" focusable="false">
+            <path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h8.4a2 2 0 0 0 2-1.6L21 8H6"></path>
+            <circle cx="10" cy="20" r="1"></circle>
+            <circle cx="18" cy="20" r="1"></circle>
+          </svg>
+          <span class="cart-count" data-cart-count aria-live="polite" hidden>0</span>
+        </button>
+
+        <button class="btn btn--ghost btn--icon menu-toggle" type="button" data-menu-toggle aria-expanded="false" aria-controls="menu-sheet" aria-label="Abrir menú">
+          <svg class="icon-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
+            <path d="M4 7h16M4 12h16M4 17h16"></path>
+          </svg>
+          <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false" hidden>
+            <path d="m6 6 12 12M18 6 6 18"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="container search-mobile" id="search-mobile">
+      <form class="header-search js-search-form" role="search" action="tienda.html">
+        <label class="sr-only" for="search-mobile-input">Buscar productos</label>
+        <svg class="header-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
+          <circle cx="10.8" cy="10.8" r="6.8"></circle>
+          <path d="m16 16 4.5 4.5"></path>
+        </svg>
+        <input class="header-search__input" id="search-mobile-input" name="q" type="search" placeholder="¿Qué estás buscando?">
+      </form>
+    </div>
+
+    <nav class="menu-sheet" id="menu-sheet" aria-label="Menú principal" aria-hidden="true">
+      <ul class="menu-sheet__list">
+        <li><a class="menu-sheet__link" href="index.html">Inicio</a></li>
+        <li><a class="menu-sheet__link" href="tienda.html">Tienda</a></li>
+        <li><a class="menu-sheet__link" href="tienda.html?tag=oferta">Ofertas</a></li>
+        <li><a class="menu-sheet__link" href="contacto.html">Contacto</a></li>
+      </ul>
+      <div class="menu-sheet__contact">
+        <a data-wa="Hola, quería hacer una consulta sobre CIMA">Escribinos por WhatsApp</a>
+        <a data-mail></a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="site-main" id="contenido">
+    <section class="catalog-intro">
+      <div class="container">
+        <p class="eyebrow">CIMA · Bazar, hogar y cocina</p>
+        <h1>Tienda</h1>
+        <p>Objetos lindos y funcionales para disfrutar cada rincón de tu casa.</p>
+      </div>
+    </section>
+
+    <section class="catalog-section container" aria-labelledby="catalog-heading">
+      <h2 class="sr-only" id="catalog-heading">Catálogo de productos</h2>
+
+      <div class="catalog-toolbar">
+        <p class="catalog-count" data-result-count aria-live="polite"></p>
+        <label class="catalog-sort">
+          <span>Ordenar por</span>
+          <select class="field__input" name="sort" data-filter-sort>
+            <option value="relevance">Relevancia</option>
+            <option value="price-asc">Menor precio</option>
+            <option value="price-desc">Mayor precio</option>
+            <option value="newest">Más nuevos</option>
+            <option value="discount">Mayor descuento</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="catalog-layout">
+        <aside class="catalog-filters" aria-labelledby="filters-title">
+          <div class="catalog-filters__heading">
+            <h2 id="filters-title">Filtrar productos</h2>
+            <button class="catalog-clear" type="button" data-clear-filters>Limpiar</button>
+          </div>
+
+          <label class="field catalog-search">
+            <span class="field__label">Buscar</span>
+            <input class="field__input" type="search" name="q" placeholder="Producto, categoría o código" list="product-suggestions" autocomplete="off" data-filter-query>
+            <datalist id="product-suggestions" data-search-suggestions></datalist>
+          </label>
+
+          <label class="field">
+            <span class="field__label">Categoría</span>
+            <select class="field__input" name="category" data-filter-category>
+              <option value="">Todas las categorías</option>
+            </select>
+          </label>
+
+          <fieldset class="catalog-filter-group">
+            <legend>Precio</legend>
+            <div class="catalog-price-fields">
+              <label class="field">
+                <span class="field__label">Desde</span>
+                <input class="field__input" type="number" name="min" min="0" step="1000" inputmode="numeric" placeholder="$ 0" data-filter-min>
+              </label>
+              <label class="field">
+                <span class="field__label">Hasta</span>
+                <input class="field__input" type="number" name="max" min="0" step="1000" inputmode="numeric" placeholder="Sin máximo" data-filter-max>
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset class="catalog-filter-group">
+            <legend>Disponibilidad y etiquetas</legend>
+            <label class="catalog-check">
+              <input type="checkbox" name="stock" value="available" data-filter-stock>
+              <span>Solo disponibles</span>
+            </label>
+            <label class="catalog-check">
+              <input type="checkbox" name="tag" value="nuevo" data-filter-tag>
+              <span>Nuevos</span>
+            </label>
+            <label class="catalog-check">
+              <input type="checkbox" name="tag" value="oferta" data-filter-tag>
+              <span>En oferta</span>
+            </label>
+          </fieldset>
+        </aside>
+
+        <div class="catalog-results">
+          <div class="catalog-active-filters" data-active-filters aria-label="Filtros aplicados"></div>
+          <div class="catalog-grid" data-product-grid aria-live="polite"></div>
+          <div class="catalog-empty" data-empty-state hidden>
+            <span class="catalog-empty__icon" aria-hidden="true">⌕</span>
+            <h2>No encontramos productos</h2>
+            <p>Probá cambiar o sacar algún filtro para ver más opciones.</p>
+            <button class="btn btn--outline" type="button" data-clear-filters>Limpiar filtros</button>
+          </div>
+          <nav class="catalog-pagination" data-pagination aria-label="Páginas del catálogo"></nav>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <section class="footer-brand" aria-labelledby="footer-brand-title">
+        <a class="brand" href="index.html" aria-label="CIMA, ir al inicio">
+          <img class="brand__logo" data-store-src="brand.logo" src="assets/logo.svg" alt="" data-store-alt="brand.name">
+          <span class="brand__tagline" data-store="brand.tagline"></span>
+        </a>
+        <p class="footer-brand__tagline">Objetos lindos y funcionales para hacer de tu casa un lugar más tuyo.</p>
+        <h2 class="sr-only" id="footer-brand-title">Sobre CIMA</h2>
+      </section>
+      <nav aria-label="Ayuda y compras">
+        <h2 class="footer-title">Ayuda y compras</h2>
+        <ul class="footer-links">
+          <li><a href="tienda.html">Ver productos</a></li>
+          <li><a href="envios-y-devoluciones.html">Envíos y devoluciones</a></li>
+          <li><a href="contacto.html">Contacto</a></li>
+          <li><a href="arrepentimiento.html">Botón de arrepentimiento</a></li>
+        </ul>
+      </nav>
+      <nav aria-label="Información legal">
+        <h2 class="footer-title">Información legal</h2>
+        <ul class="footer-links">
+          <li><a href="terminos.html">Términos y condiciones</a></li>
+          <li><a href="privacidad.html">Política de privacidad</a></li>
+          <li><a href="https://www.argentina.gob.ar/produccion/defensadelconsumidor" target="_blank" rel="noopener noreferrer">Defensa del Consumidor</a></li>
+        </ul>
+      </nav>
+      <section aria-labelledby="footer-contact-title">
+        <h2 class="footer-title" id="footer-contact-title">Hablemos</h2>
+        <ul class="footer-contact">
+          <li data-store-if="contact.whatsapp"><a data-wa="Hola, quería hacer una consulta sobre CIMA">Escribinos por WhatsApp</a></li>
+          <li data-store-if="contact.email"><a data-mail></a></li>
+          <li data-store-if="contact.instagram"><a data-ig>@<span data-store="contact.instagram"></span></a></li>
+          <li data-store-if="contact.schedule"><span data-store="contact.schedule"></span></li>
+        </ul>
+      </section>
+    </div>
+    <div class="container footer-legal">
+      <div class="footer-legal__row">
+        <span>© <span data-store="brand.name"></span>. Todos los derechos reservados.</span>
+        <span data-store-if="legal.businessName">Razón social: <span data-store="legal.businessName"></span></span>
+        <span data-store-if="legal.cuit">CUIT: <span data-store="legal.cuit"></span></span>
+      </div>
+      <p class="footer-legal__def">Las compras a distancia cuentan con los derechos previstos por la normativa vigente. Consultá el <a href="arrepentimiento.html">botón de arrepentimiento</a>.</p>
+      <div class="footer-legal__row footer-credits">
+        <span data-store-if="credits.showInFooter">Diseñado con cuidado · Built with <strong data-store="credits.builtWith"></strong></span>
+        <span>Los textos legales son orientativos y deben ser revisados por un profesional.</span>
+      </div>
+    </div>
+  </footer>
+
+  <div class="drawer__backdrop" id="cart-backdrop" aria-hidden="true"></div>
+  <aside class="drawer mini-cart" id="mini-cart" role="dialog" aria-modal="true" aria-labelledby="mini-cart-title" aria-hidden="true" tabindex="-1">
+    <div class="drawer__header">
+      <h2 class="drawer__title" id="mini-cart-title">Tu carrito</h2>
+      <button class="btn btn--ghost btn--icon" type="button" data-cart-close aria-label="Cerrar carrito">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="m6 6 12 12M18 6 6 18"></path></svg>
+      </button>
+    </div>
+    <div class="drawer__body mini-cart__body">
+      <p class="mini-cart__message" data-cart-message role="status" aria-live="polite" hidden></p>
+      <p class="mini-cart__notice" data-cart-notices role="status" aria-live="polite" hidden></p>
+      <div class="mini-cart__empty">
+        <h3>Tu carrito está vacío</h3>
+        <p>Cuando encuentres algo que te guste, lo vas a ver acá.</p>
+        <a class="btn btn--primary" href="tienda.html" data-cart-close>Seguir mirando</a>
+      </div>
+    </div>
+    <div class="free-shipping mini-cart__shipping" data-cart-shipping-progress hidden>
+      <p class="free-shipping__text" data-cart-shipping-text></p>
+      <div class="progress" role="progressbar" aria-label="Progreso hacia el envío gratis" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="progress__fill" data-cart-shipping-fill></div>
+      </div>
+    </div>
+    <div class="drawer__footer mini-cart__summary" hidden>
+      <div class="summary-row summary-row--total"><span>Subtotal</span><span data-subtotal>$ 0</span></div>
+      <div class="mini-cart__actions">
+        <a class="btn btn--outline btn--block" href="carrito.html" data-cart-close>Revisar carrito</a>
+        <a class="btn btn--primary btn--block" href="checkout.html" data-cart-close>Finalizar pedido</a>
+      </div>
+    </div>
+  </aside>
+</body>
+</html>

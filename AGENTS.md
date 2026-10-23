@@ -376,7 +376,7 @@ Cada etapa termina con: ✅ resumen, 🧪 cómo probarlo, 📁 archivos creados/
 
 ## 11. DECISIONES ABIERTAS (usar estos valores por defecto hasta que yo diga otra cosa)
 
-1. **Nombre de la tienda:** `CIMA` (confirmado por Épsilon; aplicado en `STORE_CONFIG`, logo y favicon).
+1. **Nombre de la tienda:** `NOMBRE_TIENDA` (placeholder editable en `STORE_CONFIG`).
 2. **Paleta:** la propuesta en la sección 6.
 3. **Cobro inicial:** WhatsApp + transferencia hasta activar Mercado Pago.
 4. **Hosting Fase 1:** estático (Netlify / Vercel / GitHub Pages). **Fase 2:** Render o Railway para el servidor.
@@ -400,5 +400,5 @@ Cada etapa termina con: ✅ resumen, 🧪 cómo probarlo, 📁 archivos creados/
 ## 13. PRIMERA TAREA PARA VOS (OpenCode)
 
 1. Leé este documento completo y guardalo como `AGENTS.md`.
-2. Respondeme con un **resumen de lo que entendí** (máx. 10 líneas) y **cualquier duda crítica** (máx. 3).
+2. Respondeme con un **resumen de lo que entendiste** (máx. 10 líneas) y **cualquier duda crítica** (máx. 3).
 3. **No escribas código todavía.** Esperá mi "OK" para arrancar la **Etapa 0**.
