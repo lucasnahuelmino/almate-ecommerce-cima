@@ -97,9 +97,9 @@ Tablas existentes:
 | Borrar producto | **Implementada en la Etapa 1** (solo sin historial; con historial sugiere desactivar) |
 | Subida de imágenes | No existe | Todo (almacenamiento + validación + UI) — Etapa 2 |
 | Actualización masiva de precios/stock | **Implementada en la Etapa 3** (precios, publicación, destacados y stock, con vista previa) |
-| Importación CSV | Existe y funciona | Mejorar sin romper compatibilidad — Etapa 4 |
-| Importación Excel (.xlsx) | No existe | Todo (biblioteca aprobada: `exceljs`) — Etapa 4 |
-| Plantilla amigable | CSV técnico con JSON | Plantilla con instrucciones y formato — Etapa 4 |
+| Importación CSV | Existe y funciona | **Se conserva intacta en la Etapa 4**; nueva importación amigable en paralelo |
+| Importación Excel (.xlsx) | No existe | **Implementada en la Etapa 4** (`exceljs`, analizar → confirmar → aplicar) |
+| Plantilla amigable | CSV técnico con JSON | **Implementada en la Etapa 4** (plantilla `.xlsx` con instrucciones, ejemplos y formato de moneda) |
 | Auditoría del catálogo | No existe | Todo — Etapa 5 |
 | Respaldo de la base | No existe | Todo — Etapa 5 |
 | Gestión de pedidos | **Existe y funciona** | No tocar |
@@ -178,7 +178,7 @@ Cada etapa termina con pruebas ejecutadas y una parada para tu aprobación.
 - Resultado: **65/65 pruebas pasaron** (las 55 existentes + 10 nuevas). Además, prueba manual de humo contra el servidor real (vista previa sin escritura, apply de precios con stock intacto, ajuste de stock mixto, bloqueo con motivo, ocultar, entrada inválida 400 y borrado de limpieza) y verificación completa en navegador: selección de 2 productos, apertura del panel con contador "(2)", precio +10 %, vista previa con resumen y filas `$ 10.000 → $ 11.000`, confirmación con diálogo, mensaje "Listo: 2 producto(s) modificado(s)" con el listado refrescado en $ 11.000 / $ 5.500, y bloqueo visible con motivo al restar 100 unidades de stock.
 - **Detalle corregido durante la verificación:** los endpoints respondían `{ result: … }` en vez del objeto plano que usa el resto de la API admin; el navegador mostró un error de JS al renderizar la vista previa. Se corrigió el shape de respuesta, se actualizaron tests y humo, y se repitió la verificación completa con resultado correcto.
 
-### Etapa 4 — Importación y exportación de Excel y CSV · Estado: PENDIENTE
+### Etapa 4 — Importación y exportación de Excel y CSV · Estado: COMPLETADA (2026-10-23)
 
 - Se conserva el CSV actual sin cambios de compatibilidad (es la única vía hoy usada y está probada).
 - Nueva importación con encabezados amigables en español, columnas opcionales y política explícita de campos vacíos: **vacío = conservar el valor actual; para borrar un valor debe usarse un texto explícito**.
@@ -189,6 +189,18 @@ Cada etapa termina con pruebas ejecutadas y una parada para tu aprobación.
 - Nunca se reemplaza el catálogo completo por defecto.
 
 **Pruebas previstas:** Excel inválido no modifica nada; SKU duplicado detectado; campos vacíos no borran datos; el formato CSV anterior sigue funcionando igual.
+
+**Implementado y verificado (2026-10-23)**
+
+- `server/services/catalog-import-enhanced.js`: encabezados en español con alias ("Precio anterior", "Unidades", "Activo", "Enlace"…); celda vacía = conservar y "VACÍO" = vaciar un campo opcional (nombre, SKU y categoría no se pueden vaciar, con mensaje de fila); identificación solo por ID o SKU; si un mismo producto aparece en varias filas, **ambas** se detienen (dato ambiguo) y el resto del archivo se importa igual; categoría acepta ID o nombre ("Cocina"); especificaciones/variantes en texto ("Material: aluminio" / "Color: Negro|Rojo"); números en formato argentino ("89.900") y booleanos Sí/No.
+- Archivos: CSV con separador detectado automáticamente (`,` o `;`) y `.xlsx` por bytes mágicos, leyendo la hoja que contenga los encabezados (así funciona el archivo exportado, que trae "Instrucciones" primero). XLSX basura = 400 sin escrituras; límite 10 MB / 1000 filas.
+- Flujo completo: `analyze` sin escrituras → informe (crear/actualizar/sin cambios/error por fila, con cambios legibles "Precio: $ 10.000 → $ 11.000", columnas desconocidas avisadas) → confirmación → `apply` que re-analiza y escribe todo en UNA transacción. Reutiliza `validateForSave` (mismas reglas del panel) y `upsertProductRow` (conserva el orden de la tienda y la semántica de stock góndola + vendido); stock nunca baja de reservas activas.
+- Endpoints (sesión + same-origin + CSRF en los POST; solo sesión en los GET): `GET /api/admin/catalog/template.xlsx` (hojas Instrucciones + Productos con ejemplos y formato `"$"#,##0`), `GET /api/admin/catalog/friendly.xlsx` (catálogo actual editable), `POST /api/admin/catalog/enhanced/analyze` y `POST /api/admin/catalog/enhanced/apply` (cuerpo binario `application/octet-stream`).
+- Panel: sección "Recomendada: plantilla de Excel o CSV en español" con los dos vínculos de descarga, carga de archivo, informe fila por fila (Se creará / Se actualizará / Sin cambios / No se puede + motivo), botón "Descargar informe (.csv)" generado en el navegador y "Aplicar N cambio(s)…" con `window.confirm`; al aplicar refresca el listado. El CSV técnico queda debajo, sin cambios de interfaz ni de formato.
+- Compatibilidad: `parseCsvRows(csv, delimiter)` con separador opcional (los llamados existentes no cambian). `exceljs@4.4.0` instalada en `server/`.
+- Correcciones de diseño detectadas durante la etapa: la exportación round-trip marca como "sin cambios" lo que no cambió (se comparan listas por contenido, no por cantidad), y la hoja de datos se localiza entre las hojas del archivo.
+- **Pruebas ejecutadas:** 80/80 (65 existentes + 15 nuevas en `catalog-import-enhanced.test.js`): seguridad (401/403), celdas vacías conservan datos, VACÍO limpia solo lo opcional, creación con categoría por nombre, imágenes obligatorias en creación, SKU duplicado, ID inexistente, stock bajo reservas, XLSX inválido sin escrituras, archivo sin cambios sin escrituras, columnas ignoradas, separador `;`, plantilla, round-trip exportar→editar→importar y exportación completa.
+- Verificación manual: humo HTTP por API (todo OK) y en navegador real: carga del CSV, informe ("1 a crear", "Se creará"), confirmación ("¿Importar 1 producto(s) nuevo(s)…?"), mensaje "Listo: 1 producto(s) nuevo(s)." y el producto en el listado refrescado. La captura de pantalla no pudo tomarse (ventana de escritorio no visible); los estados se leyeron del DOM.
 
 ### Etapa 5 — Seguridad, historial y respaldo · Estado: PENDIENTE
 
@@ -216,8 +228,8 @@ Cada etapa termina con pruebas ejecutadas y una parada para tu aprobación.
 - Crear: `server/services/bulk-ops.js`, `server/test/bulk-ops.test.js`
 
 **Etapa 4**
-- Modificar: `server/services/catalog-admin.js` (mejoras compatibles), `server/admin-router.js`, panel
-- Crear: `server/services/catalog-import-enhanced.js`, `server/test/catalog-import.test.js`
+- Modificar: `server/services/catalog-admin.js` (compat: `parseCsvRows` con separador opcional + exports), `server/services/catalog-manage.js` (export de `validateForSave`), `server/admin-router.js`, `server/admin/index.html`, `server/admin/catalog.js`, `server/admin/admin.css`
+- Crear: `server/services/catalog-import-enhanced.js`, `server/test/catalog-import-enhanced.test.js` (el nombre previsto era `catalog-import.test.js`; se le agregó el sufijo para reflejar el servicio real)
 
 **Etapa 5**
 - Modificar: `server/db.js` (tabla de auditoría), `server/services/*` (registro de acciones), panel
@@ -293,8 +305,8 @@ Informe final de cada etapa: qué pruebas se ejecutaron, cuáles pasaron, cuále
 | 1 — Catálogo y edición individual | **completada** | 2026-10-23 | 41/41 pruebas pasaron (30 existentes + 11 nuevas en `admin-catalog.test.js`); prueba manual de humo y verificación en navegador |
 | 2 — Imágenes | **completada** | 2026-10-23 | 55/55 pruebas pasaron (41 existentes + 14 nuevas en `media.test.js`); prueba manual de humo y verificación completa en navegador |
 | 3 — Operaciones masivas | **completada** | 2026-10-23 | 65/65 pruebas pasaron (55 existentes + 10 nuevas en `bulk-ops.test.js`); prueba manual de humo y verificación completa en navegador (vista previa, confirmación, apply y bloqueo con motivo) |
-| 4 — Excel y CSV | pendiente | — | — |
+| 4 — Excel y CSV | **completada** | 2026-10-23 | 80/80 pruebas pasaron (65 existentes + 15 nuevas en `catalog-import-enhanced.test.js`); humo HTTP y verificación en navegador (análisis, informe, confirmación, apply y listado refrescado) |
 | 5 — Seguridad, historial y respaldo | pendiente | — | — |
 
 **Problemas pendientes de esta fase:**
-- Ninguno. Etapa 3 completada y a la espera de tu "OK" para comenzar la Etapa 4 (Excel y CSV con `exceljs`).
+- Ninguno. Etapa 4 completada y a la espera de tu "OK" para comenzar la Etapa 5 (auditoría, respaldos e historial).

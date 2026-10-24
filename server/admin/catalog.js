@@ -988,6 +988,189 @@
     });
   });
 
+  /* ---------- Importación amigable: Excel o CSV en español (Etapa 4) ---------- */
+
+  const friendlyForm = document.querySelector("[data-friendly-form]");
+  const friendlyFile = document.querySelector("#friendly-file");
+  const friendlyMessage = document.querySelector("[data-friendly-message]");
+  const friendlyReport = document.querySelector("[data-friendly-report]");
+  const friendlySummary = document.querySelector("[data-friendly-summary]");
+  const friendlyRows = document.querySelector("[data-friendly-rows]");
+  const friendlyApply = document.querySelector("[data-friendly-apply]");
+  const friendlyReportCsv = document.querySelector("[data-friendly-report-csv]");
+  // Último informe analizado (para el CSV descargable y para confirmar la aplicación).
+  let friendlyAnalysis = null;
+
+  const friendlyActionLabels = {
+    create: "Se creará",
+    update: "Se actualizará",
+    skip: "Sin cambios",
+    error: "No se puede"
+  };
+  const friendlyStatusClasses = {
+    create: "bulk-ops__status--change",
+    update: "bulk-ops__status--change",
+    skip: "bulk-ops__status--noop",
+    error: "bulk-ops__status--blocked"
+  };
+
+  const showFriendlyMessage = (text, kind = "error") => {
+    friendlyMessage.textContent = text;
+    friendlyMessage.dataset.kind = kind;
+    friendlyMessage.hidden = !text;
+  };
+
+  /** Invalida el análisis vigente (cambió el archivo elegido). */
+  const invalidateFriendly = () => {
+    friendlyAnalysis = null;
+    friendlyApply.hidden = true;
+    friendlyApply.disabled = false;
+    friendlyApply.textContent = "Aplicar cambios…";
+    friendlyReport.hidden = true;
+    friendlySummary.textContent = "";
+    friendlyRows.replaceChildren();
+  };
+
+  /** Resumen + tabla fila por fila (mismo shape para analizar y aplicar). */
+  const renderFriendlyReport = (report) => {
+    const { summary } = report;
+    friendlySummary.textContent =
+      `Archivo analizado: ${summary.total} fila(s) · ${summary.create} a crear · ` +
+      `${summary.update} a actualizar · ${summary.skip} sin cambios · ${summary.error} con error.`;
+    friendlyRows.replaceChildren();
+    report.rows.forEach((row) => {
+      const tr = document.createElement("tr");
+
+      const rowCell = document.createElement("td");
+      rowCell.textContent = String(row.row);
+      tr.appendChild(rowCell);
+
+      const productCell = document.createElement("td");
+      const name = document.createElement("strong");
+      name.textContent = row.name || "(sin nombre)";
+      productCell.appendChild(name);
+      if (row.sku) {
+        const sku = document.createElement("span");
+        sku.className = "bulk-ops__sku";
+        sku.textContent = row.sku;
+        productCell.appendChild(sku);
+      }
+      tr.appendChild(productCell);
+
+      const actionCell = document.createElement("td");
+      const status = document.createElement("span");
+      status.className = `bulk-ops__status ${friendlyStatusClasses[row.action] || ""}`;
+      status.textContent = friendlyActionLabels[row.action] || row.action;
+      actionCell.appendChild(status);
+      tr.appendChild(actionCell);
+
+      const detailCell = document.createElement("td");
+      detailCell.textContent = row.action === "error" ? row.error : row.changes.join(" · ");
+      tr.appendChild(detailCell);
+
+      friendlyRows.appendChild(tr);
+    });
+  };
+
+  /** Descarga el informe visible como CSV (generado en el navegador). */
+  friendlyReportCsv.addEventListener("click", () => {
+    if (!friendlyAnalysis) return;
+    const quote = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+    const lines = [["Fila", "Producto", "SKU", "Acción", "Detalle"].map(quote).join(";")];
+    friendlyAnalysis.rows.forEach((row) => {
+      const detail = row.action === "error" ? row.error : row.changes.join(" | ");
+      lines.push([row.row, row.name, row.sku, friendlyActionLabels[row.action] || row.action, detail]
+        .map(quote).join(";"));
+    });
+    const blob = new Blob([`\uFEFF${lines.join("\r\n")}`], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "informe-importacion.csv";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  });
+
+  friendlyFile.addEventListener("change", invalidateFriendly);
+
+  friendlyForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const file = friendlyFile.files && friendlyFile.files[0];
+    if (!file) {
+      showFriendlyMessage("Elegí un archivo .xlsx o .csv para analizar.");
+      return;
+    }
+    const submitButton = friendlyForm.querySelector('button[type="submit"]');
+    invalidateFriendly();
+    submitButton.disabled = true;
+    showFriendlyMessage("Analizando el archivo… todavía no se aplicó nada.", "ok");
+    try {
+      const buffer = await file.arrayBuffer();
+      const report = await core.request("/api/admin/catalog/enhanced/analyze", {
+        method: "POST",
+        body: buffer,
+        contentType: "application/octet-stream"
+      });
+      friendlyAnalysis = report;
+      renderFriendlyReport(report);
+      friendlyReport.hidden = false;
+      const ignored = report.ignoredColumns.length
+        ? ` Columnas no reconocidas (se ignoraron): ${report.ignoredColumns.join(", ")}.`
+        : "";
+      const pending = report.summary.create + report.summary.update;
+      if (pending > 0) {
+        friendlyApply.hidden = false;
+        friendlyApply.textContent = `Aplicar ${pending} cambio(s)…`;
+        showFriendlyMessage(`Vista previa lista. Nada se aplicó todavía: revisá el detalle y confirmá.${ignored}`, "ok");
+      } else {
+        showFriendlyMessage(`El archivo no trae cambios para aplicar.${ignored}`, "ok");
+      }
+    } catch (error) {
+      showFriendlyMessage(error.message);
+    } finally {
+      submitButton.disabled = false;
+    }
+  });
+
+  friendlyApply.addEventListener("click", async () => {
+    if (!friendlyAnalysis) return;
+    const file = friendlyFile.files && friendlyFile.files[0];
+    if (!file) return;
+    const { summary } = friendlyAnalysis;
+    const confirmed = window.confirm(
+      `¿Importar ${summary.create} producto(s) nuevo(s) y ${summary.update} actualización(es)?\n` +
+      `${summary.error} fila(s) con error no se importarán (el resto sí).`
+    );
+    if (!confirmed) return;
+    friendlyApply.disabled = true;
+    try {
+      // Se reenvía el MISMO archivo: el servidor re-analiza con los datos actuales.
+      const buffer = await file.arrayBuffer();
+      const result = await core.request("/api/admin/catalog/enhanced/apply", {
+        method: "POST",
+        body: buffer,
+        contentType: "application/octet-stream"
+      });
+      renderFriendlyReport(result);
+      friendlyApply.hidden = true;
+      friendlyAnalysis = null;
+      const parts = [];
+      if (result.applied.created) parts.push(`${result.applied.created} producto(s) nuevo(s)`);
+      if (result.applied.updated) parts.push(`${result.applied.updated} actualizado(s)`);
+      const appliedText = parts.length ? parts.join(" y ") : "sin cambios";
+      const errorText = result.summary.error
+        ? ` ${result.summary.error} fila(s) con error quedaron sin importar.`
+        : "";
+      showFriendlyMessage(`Listo: ${appliedText}.${errorText}`, "ok");
+      await loadProducts();
+    } catch (error) {
+      showFriendlyMessage(error.message);
+      friendlyApply.disabled = false;
+    }
+  });
+
   /* ---------- Arranque ---------- */
 
   const start = async () => {

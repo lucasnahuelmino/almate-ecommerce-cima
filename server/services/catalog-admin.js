@@ -12,7 +12,7 @@ const columns = [
 const maxCsvLength = 2 * 1024 * 1024;
 const maxProductsPerImport = 1000;
 
-const parseCsvRows = (csv) => {
+const parseCsvRows = (csv, delimiter = ",") => {
   if (typeof csv !== "string" || csv.length > maxCsvLength) {
     throw Object.assign(new Error("El CSV supera el límite de 2 MB."), { status: 413 });
   }
@@ -33,7 +33,7 @@ const parseCsvRows = (csv) => {
       }
     } else if (character === '"' && cell.length === 0) {
       quoted = true;
-    } else if (character === ",") {
+    } else if (character === delimiter) {
       row.push(cell);
       cell = "";
     } else if (character === "\n" || character === "\r") {
@@ -191,5 +191,7 @@ module.exports = {
   columns,
   exportCatalogCsv,
   importCatalogCsv,
-  previewCatalogCsv
+  parseCsvRows,
+  previewCatalogCsv,
+  slugify
 };

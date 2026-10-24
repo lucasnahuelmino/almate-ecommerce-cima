@@ -398,10 +398,44 @@
 
       <section class="catalog-panel csv-panel" data-csv-panel hidden aria-labelledby="csv-title">
         <div>
-          <h2 id="csv-title">Importación masiva (CSV)</h2>
-          <p>Para cambiar muchos productos a la vez. Descargá el CSV, editalo en Excel o Google Sheets y volvé a importarlo. La importación valida todo antes de aplicar cambios.</p>
+          <h2 id="csv-title">Importación masiva</h2>
+          <p>Para cambiar muchos productos a la vez. La importación valida todo antes de aplicar cambios.</p>
+          <h3>Recomendada: plantilla de Excel o CSV en español</h3>
+          <p>Descargá la plantilla, editala en Excel o Google Sheets y subila acá. Las celdas vacías conservan el valor actual; para vaciar un valor escribí VACÍO. Primero se analiza el archivo y nada se aplica hasta que confirmes.</p>
+          <p class="friendly-import__links">
+            <a class="button button--secondary" href="/api/admin/catalog/template.xlsx">Descargar plantilla (.xlsx)</a>
+            <a class="button button--secondary" href="/api/admin/catalog/friendly.xlsx">Descargar catálogo actual (.xlsx)</a>
+          </p>
+          <form data-friendly-form>
+            <label for="friendly-file">Archivo para importar (.xlsx o .csv)</label>
+            <input id="friendly-file" name="friendly" type="file" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required>
+            <button class="button button--primary" type="submit">Analizar archivo</button>
+          </form>
+          <p class="message" data-friendly-message role="status" aria-live="polite" hidden></p>
+          <div class="friendly-import__report" data-friendly-report hidden>
+            <p class="friendly-import__summary" data-friendly-summary></p>
+            <p>
+              <button class="button button--secondary" type="button" data-friendly-report-csv>Descargar informe (.csv)</button>
+            </p>
+            <div class="table-wrap">
+              <table class="catalog-table friendly-import__table">
+                <caption class="visually-hidden">Detalle fila por fila del archivo analizado</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Fila</th>
+                    <th scope="col">Producto</th>
+                    <th scope="col">Acción</th>
+                    <th scope="col">Detalle</th>
+                  </tr>
+                </thead>
+                <tbody data-friendly-rows></tbody>
+              </table>
+            </div>
+            <button class="button button--primary" type="button" data-friendly-apply hidden>Aplicar cambios…</button>
+          </div>
         </div>
         <form data-catalog-form>
+          <h3>CSV técnico (compatibilidad)</h3>
           <label for="catalog-file">Archivo CSV actualizado</label>
           <input id="catalog-file" name="catalog" type="file" accept=".csv,text/csv" required>
           <button class="button button--primary" type="submit">Validar e importar</button>

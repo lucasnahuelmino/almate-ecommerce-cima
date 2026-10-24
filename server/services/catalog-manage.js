@@ -275,5 +275,6 @@ module.exports = {
   getProduct,
   listProducts,
   setProductActive,
-  updateProduct
+  updateProduct,
+  validateForSave
 };

@@ -270,6 +270,29 @@ input:focus-visible {
   max-width: 100%;
 }
 
+/* ---------- Importación amigable (Etapa 4) ---------- */
+
+.friendly-import__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.friendly-import__report {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.friendly-import__summary {
+  margin: 0;
+  font-weight: 650;
+}
+
+.friendly-import__table td:last-child {
+  min-width: 12rem;
+}
+
 /* ---------- Navegación del panel ---------- */
 
 .admin-nav {

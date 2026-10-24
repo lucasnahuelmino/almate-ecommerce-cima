@@ -23,6 +23,12 @@ const {
 const { listCategories } = require("./db");
 const { createMediaService } = require("./services/media");
 const { applyBulkOperation, previewBulkOperation } = require("./services/bulk-ops");
+const {
+  analyzeCatalogImport,
+  applyCatalogImport,
+  buildFriendlyTemplate,
+  exportCatalogFriendly
+} = require("./services/catalog-import-enhanced");
 
 const privateOrderFields = (request, response, next) => {
   response.set({
@@ -323,6 +329,70 @@ const createAdminRouter = ({ database, adminAuth, mediaDirectory = null }) => {
     (request, response, next) => {
       try {
         response.json(applyBulkOperation(database, request.body));
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  /* ---------- Importación amigable (Etapa 4) ---------- */
+
+  // Descarga .xlsx (plantilla con instrucciones y catálogo actual editable).
+  const sendWorkbook = async (build, filename, response, next) => {
+    try {
+      const buffer = await build();
+      response.set({
+        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Cache-Control": "no-store"
+      });
+      response.send(buffer);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  router.get("/catalog/template.xlsx", requireSession, (request, response, next) => {
+    void sendWorkbook(buildFriendlyTemplate, "plantilla-productos-cima.xlsx", response, next);
+  });
+
+  router.get("/catalog/friendly.xlsx", requireSession, (request, response, next) => {
+    void sendWorkbook(
+      () => exportCatalogFriendly(database),
+      "catalogo-cima.xlsx",
+      response,
+      next
+    );
+  });
+
+  // El archivo viaja como cuerpo binario crudo, igual que las imágenes:
+  // primero se analiza sin escribir y después se aplica en una transacción.
+  const friendlyImportBody = express.raw({ type: "application/octet-stream", limit: "10mb" });
+
+  router.post(
+    "/catalog/enhanced/analyze",
+    requireSameOrigin,
+    requireSession,
+    requireCsrf,
+    friendlyImportBody,
+    async (request, response, next) => {
+      try {
+        response.json(await analyzeCatalogImport(database, request.body));
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  router.post(
+    "/catalog/enhanced/apply",
+    requireSameOrigin,
+    requireSession,
+    requireCsrf,
+    friendlyImportBody,
+    async (request, response, next) => {
+      try {
+        response.json(await applyCatalogImport(database, request.body));
       } catch (error) {
         next(error);
       }

@@ -5,6 +5,22 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
 ---
 
+## [1.13.0] — 2026-10-23
+
+### Panel de administración — Etapa 4: importación amigable de Excel y CSV
+
+#### Agregado
+- Nueva importación masiva "para humanos" junto al CSV técnico (que queda intacto): encabezados en español con alias ("Precio anterior", "Unidades", "Activo", "Enlace"…), columnas opcionales, celda vacía = **conservar** el valor actual y texto explícito `VACÍO` = vaciar un campo opcional (nombre, SKU y categoría no admiten vaciarse). Identificación **solo por ID o SKU**; si un mismo producto aparece en varias filas, ambas se detienen con el detalle y el resto del archivo se importa igual.
+- Soporte `.xlsx` (dependencia `exceljs@4.4.0` en `server/`) y CSV con separador detectado automáticamente (`,` o `;`). El `.xlsx` se reconoce por bytes mágicos y se lee la hoja que contenga los encabezados (la plantilla y la exportación traen "Instrucciones" primero). Archivo inválido = 400 sin escrituras; límite 10 MB / 1000 filas.
+- Flujo analizar → confirmar → aplicar: `POST /api/admin/catalog/enhanced/analyze` no escribe nada y devuelve un informe fila por fila ("Se creará" / "Se actualizará" con cambios legibles tipo "Precio: $ 10.000 → $ 11.000" / "Sin cambios" / "No se puede" + motivo, más columnas desconocidas avisadas); `POST /api/admin/catalog/enhanced/apply` re-analiza con los datos actuales y escribe todo en UNA transacción. Reutiliza `validateForSave` y `upsertProductRow` del panel: mismas reglas de validación, orden de la tienda conservado y semántica de stock (góndola + vendido, nunca por debajo de reservas activas).
+- Plantilla descargable `GET /api/admin/catalog/template.xlsx` (hojas "Instrucciones" + "Productos" con ejemplos ficticios y formato de moneda `"$"#,##0`) y exportación editable del catálogo `GET /api/admin/catalog/friendly.xlsx` (round-trip verificado: exportar → editar un precio → importar marca solo la fila editada).
+- Sección "Recomendada: plantilla de Excel o CSV en español" en el panel: descargas, carga de archivo, informe con tabla fila por fila, botón "Descargar informe (.csv)" (generado en el navegador) y "Aplicar N cambio(s)…" con confirmación. Acceso protegido por sesión; los POST exigen además mismo origen y token CSRF (cuerpo binario `application/octet-stream`, patrón de las imágenes).
+- Compatibilidad: `parseCsvRows(csv, delimiter)` acepta separador opcional sin cambiar a los llamados existentes; el CSV técnico de 18 columnas sigue funcionando igual.
+
+#### Verificado
+- 80/80 pruebas del backend pasaron (65 existentes + 15 nuevas en `catalog-import-enhanced.test.js`): seguridad (sesión/CSRF/origen), vacío conserva, `VACÍO` limpia solo lo opcional, creación con categoría por nombre, imágenes obligatorias, SKU duplicado, ID inexistente, stock bajo reservas, XLSX inválido sin escrituras, archivo sin cambios sin escrituras, columnas ignoradas, separador `;`, plantilla y round-trip.
+- Humo HTTP por API (incluido round-trip exportar→editar→importar: 25 "sin cambios" de 26) y verificación en navegador: carga de CSV, informe "1 a crear · Se creará", confirmación, mensaje "Listo: 1 producto(s) nuevo(s)." y el producto en el listado refrescado (captura de pantalla no disponible por la ventana de escritorio; los estados se leyeron del DOM).
+
 ## [1.12.0] — 2026-10-23
 
 ### Panel de administración — Etapa 3: operaciones masivas
