@@ -25,6 +25,33 @@
   const bulkUnpublish = document.querySelector("[data-bulk-unpublish]");
   const newButton = document.querySelector("[data-product-new]");
 
+  // Operaciones masivas (Etapa 3)
+  const bulkOpen = document.querySelector("[data-bulk-open]");
+  const bulkOps = document.querySelector("[data-bulk-ops]");
+  const bulkScopeRadios = document.querySelectorAll("[data-bulk-scope]");
+  const bulkScopeCount = document.querySelector("[data-bulk-scope-count]");
+  const bulkScopeCategory = document.querySelector("[data-bulk-scope-category]");
+  const bulkKind = document.querySelector("[data-bulk-kind]");
+  const bulkPriceFields = document.querySelector("[data-bulk-price-fields]");
+  const bulkBoolFields = document.querySelector("[data-bulk-bool-fields]");
+  const bulkStockFields = document.querySelector("[data-bulk-stock-fields]");
+  const bulkPriceDirection = document.querySelector("[data-bulk-price-direction]");
+  const bulkPriceMode = document.querySelector("[data-bulk-price-mode]");
+  const bulkPriceValue = document.querySelector("[data-bulk-price-value]");
+  const bulkPriceValueLabel = document.querySelector("[data-bulk-price-value-label]");
+  const bulkPriceRounding = document.querySelector("[data-bulk-price-rounding]");
+  const bulkBoolLabel = document.querySelector("[data-bulk-bool-label]");
+  const bulkBoolValue = document.querySelector("[data-bulk-bool-value]");
+  const bulkStockMode = document.querySelector("[data-bulk-stock-mode]");
+  const bulkStockValue = document.querySelector("[data-bulk-stock-value]");
+  const bulkStockValueLabel = document.querySelector("[data-bulk-stock-value-label]");
+  const bulkPreview = document.querySelector("[data-bulk-preview]");
+  const bulkApply = document.querySelector("[data-bulk-apply]");
+  const bulkMessage = document.querySelector("[data-bulk-message]");
+  const bulkResult = document.querySelector("[data-bulk-result]");
+  const bulkSummary = document.querySelector("[data-bulk-summary]");
+  const bulkResultRows = document.querySelector("[data-bulk-result-rows]");
+
   const form = document.querySelector("[data-product-form]");
   const formTitle = document.querySelector("[data-product-form-title]");
   const deleteButton = document.querySelector("[data-product-delete]");
@@ -57,6 +84,9 @@
   let editingId = null;
   let started = false;
   let searchTimer = null;
+  // Último pedido de vista previa de cambios masivos (lo reaplica el botón Aplicar).
+  let bulkInput = null;
+  let bulkPreviewSummary = null;
 
   /* ---------- Utilidades ---------- */
 
@@ -102,7 +132,7 @@
   const loadCategories = async () => {
     const result = await core.request("/api/admin/categories");
     categories = result.categories || [];
-    [filters.category, categorySelect].forEach((select) => {
+    [filters.category, categorySelect, bulkScopeCategory].forEach((select) => {
       const keep = select.value;
       select.replaceChildren();
       if (select === filters.category) {
@@ -110,6 +140,12 @@
         all.value = "";
         all.textContent = "Todas";
         select.appendChild(all);
+      }
+      if (select === bulkScopeCategory) {
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "Elegir categoría…";
+        select.appendChild(placeholder);
       }
       categories.forEach((category) => {
         const option = document.createElement("option");
@@ -236,6 +272,7 @@
   const updateBulkBar = () => {
     bulkBar.hidden = selected.size === 0;
     bulkCount.textContent = `${selected.size} ${selected.size === 1 ? "seleccionado" : "seleccionados"}`;
+    bulkScopeCount.textContent = String(selected.size);
   };
 
   const loadProducts = async () => {
@@ -673,6 +710,266 @@
 
   bulkPublish.addEventListener("click", () => bulkSetActive(true));
   bulkUnpublish.addEventListener("click", () => bulkSetActive(false));
+
+  /* ---------- Operaciones masivas (Etapa 3) ---------- */
+
+  const showBulkMessage = (text, kind = "error") => {
+    bulkMessage.textContent = text;
+    bulkMessage.dataset.kind = kind;
+    bulkMessage.hidden = !text;
+  };
+
+  const currentBulkScope = () => {
+    const checked = [...bulkScopeRadios].find((radio) => radio.checked);
+    return checked ? checked.value : "selection";
+  };
+
+  // Cada cambio en los datos invalida la vista previa: el botón "Aplicar"
+  // solo aparece con una vista previa fresca del mismo pedido.
+  const invalidateBulkPreview = () => {
+    bulkInput = null;
+    bulkPreviewSummary = null;
+    bulkApply.hidden = true;
+    bulkApply.disabled = false;
+    bulkApply.textContent = "Aplicar cambios…";
+    bulkResult.hidden = true;
+    bulkResultRows.replaceChildren();
+  };
+
+  const formatBulkValue = (field, value) => {
+    if (value === null || value === undefined) return "—";
+    if (field === "price") return formatPrice(value);
+    if (field === "stock") return `${Number(value).toLocaleString("es-AR")} unidades`;
+    if (field === "active") return value ? "Publicado" : "Oculto";
+    return value ? "Destacado" : "Sin destacar";
+  };
+
+  /** Arma el pedido al servidor; devuelve null y muestra un aviso si falta algo. */
+  const buildBulkInput = () => {
+    if (currentBulkScope() === "category") {
+      if (!bulkScopeCategory.value) {
+        showBulkMessage("Elegí la categoría a modificar.");
+        return null;
+      }
+    } else if (!selected.size) {
+      showBulkMessage("Seleccioná al menos un producto en la lista.");
+      return null;
+    }
+    const kind = bulkKind.value;
+    if (!kind) {
+      showBulkMessage("Elegí qué cambio querés hacer.");
+      return null;
+    }
+    let operation = null;
+    if (kind === "price") {
+      if (bulkPriceValue.value === "") {
+        showBulkMessage("Completá el valor del cambio de precio.");
+        return null;
+      }
+      operation = {
+        kind: "price",
+        mode: bulkPriceMode.value,
+        direction: bulkPriceDirection.value,
+        value: Number(bulkPriceValue.value),
+        rounding: bulkPriceRounding.value
+      };
+    } else if (kind === "active" || kind === "featured") {
+      operation = { kind, value: bulkBoolValue.value === "true" };
+    } else {
+      if (bulkStockValue.value === "") {
+        showBulkMessage("Completá las unidades del ajuste de stock.");
+        return null;
+      }
+      operation = {
+        kind: "stock",
+        mode: bulkStockMode.value,
+        value: Number(bulkStockValue.value)
+      };
+    }
+    const scope = currentBulkScope() === "category"
+      ? { type: "category", category: bulkScopeCategory.value }
+      : { type: "ids", ids: [...selected] };
+    return { scope, operation };
+  };
+
+  const renderBulkResult = (result, applied = false) => {
+    bulkResultRows.replaceChildren();
+    result.rows.forEach((item) => {
+      const row = document.createElement("tr");
+
+      const nameCell = document.createElement("td");
+      const name = document.createElement("strong");
+      name.textContent = item.name;
+      const sku = document.createElement("span");
+      sku.className = "bulk-ops__sku";
+      sku.textContent = item.sku;
+      nameCell.append(name, sku);
+      row.appendChild(nameCell);
+
+      const currentCell = document.createElement("td");
+      currentCell.textContent = formatBulkValue(result.field, item.current);
+      row.appendChild(currentCell);
+
+      const nextCell = document.createElement("td");
+      nextCell.textContent = formatBulkValue(result.field, item.next);
+      if (item.note) {
+        const note = document.createElement("span");
+        note.className = "bulk-ops__note";
+        note.textContent = item.note;
+        nextCell.appendChild(note);
+      }
+      row.appendChild(nextCell);
+
+      const statusCell = document.createElement("td");
+      statusCell.className = `bulk-ops__status bulk-ops__status--${item.status}`;
+      statusCell.textContent = item.status === "change"
+        ? (applied ? "Modificado" : "Se modificará")
+        : item.status === "noop"
+          ? "Sin cambios"
+          : "No se puede";
+      if (item.reason) {
+        const reason = document.createElement("span");
+        reason.className = "bulk-ops__reason";
+        reason.textContent = item.reason;
+        statusCell.appendChild(reason);
+      }
+      row.appendChild(statusCell);
+
+      bulkResultRows.appendChild(row);
+    });
+
+    const summary = result.summary;
+    const parts = [
+      `${summary.total} producto(s) en alcance`,
+      `${summary.changes} a modificar`
+    ];
+    if (summary.noops) parts.push(`${summary.noops} sin cambios`);
+    if (summary.blocked) parts.push(`${summary.blocked} no se pueden modificar`);
+    if (typeof summary.applied === "number") parts.push(`${summary.applied} aplicado(s)`);
+    bulkSummary.textContent = `${applied ? "Aplicado · " : ""}${result.description} · ${parts.join(" · ")}`;
+  };
+
+  bulkOpen.addEventListener("click", () => {
+    const willOpen = bulkOps.hidden;
+    bulkOps.hidden = !willOpen;
+    bulkOpen.setAttribute("aria-expanded", String(willOpen));
+    if (willOpen) {
+      bulkScopeCount.textContent = String(selected.size);
+      const isCategory = currentBulkScope() === "category";
+      bulkScopeCategory.hidden = !isCategory;
+      bulkScopeCategory.disabled = isCategory ? false : true;
+    }
+  });
+
+  bulkScopeRadios.forEach((radio) => radio.addEventListener("change", () => {
+    const isCategory = currentBulkScope() === "category";
+    bulkScopeCategory.hidden = !isCategory;
+    bulkScopeCategory.disabled = !isCategory;
+    invalidateBulkPreview();
+  }));
+
+  bulkKind.addEventListener("change", () => {
+    const kind = bulkKind.value;
+    bulkPriceFields.hidden = kind !== "price";
+    bulkBoolFields.hidden = kind !== "active" && kind !== "featured";
+    bulkStockFields.hidden = kind !== "stock";
+    if (kind === "active") bulkBoolLabel.textContent = "Publicar en la tienda";
+    if (kind === "featured") bulkBoolLabel.textContent = "Destacar en la tienda";
+    invalidateBulkPreview();
+  });
+
+  bulkPriceMode.addEventListener("change", () => {
+    const isPercent = bulkPriceMode.value === "percent";
+    bulkPriceValueLabel.textContent = isPercent ? "Valor (%)" : "Valor ($)";
+    bulkPriceValue.min = isPercent ? "0.01" : "1";
+    bulkPriceValue.max = isPercent ? "1000" : "100000000";
+    bulkPriceValue.step = isPercent ? "0.5" : "1";
+    bulkPriceValue.placeholder = isPercent ? "Ej.: 10" : "Ej.: 500";
+    invalidateBulkPreview();
+  });
+
+  bulkStockMode.addEventListener("change", () => {
+    bulkStockValueLabel.textContent = {
+      increase: "Unidades a sumar",
+      decrease: "Unidades a restar",
+      set: "Stock final (góndola)"
+    }[bulkStockMode.value];
+    invalidateBulkPreview();
+  });
+
+  // Cualquier toque en los controles de datos deja la vista previa vieja.
+  [
+    bulkScopeCategory,
+    bulkKind,
+    bulkPriceDirection,
+    bulkPriceValue,
+    bulkPriceRounding,
+    bulkBoolValue,
+    bulkStockValue
+  ].forEach((control) => {
+    control.addEventListener("input", invalidateBulkPreview);
+    control.addEventListener("change", invalidateBulkPreview);
+  });
+
+  bulkPreview.addEventListener("click", async () => {
+    const input = buildBulkInput();
+    if (!input) return;
+    invalidateBulkPreview();
+    bulkPreview.disabled = true;
+    try {
+      const result = await core.request("/api/admin/catalog/bulk/preview", {
+        method: "POST",
+        body: JSON.stringify(input)
+      });
+      bulkInput = input;
+      bulkPreviewSummary = result.summary;
+      renderBulkResult(result);
+      bulkResult.hidden = false;
+      if (result.summary.changes > 0) {
+        bulkApply.hidden = false;
+        bulkApply.disabled = false;
+        bulkApply.textContent = `Aplicar ${result.summary.changes} cambio(s)…`;
+        showBulkMessage("Vista previa lista. Nada se aplicó todavía: revisá y confirmá.", "ok");
+      } else {
+        bulkApply.hidden = true;
+        showBulkMessage("Ningún producto requiere cambios con esa operación.", "ok");
+      }
+    } catch (error) {
+      showBulkMessage(error.message);
+    } finally {
+      bulkPreview.disabled = false;
+    }
+  });
+
+  bulkApply.addEventListener("click", async () => {
+    if (!bulkInput || !bulkPreviewSummary) return;
+    const confirmed = window.confirm(
+      `¿Aplicar ${bulkPreviewSummary.changes} cambio(s) a ${bulkPreviewSummary.total} producto(s)?\n` +
+      "Se modificarán solo los campos indicados en la vista previa."
+    );
+    if (!confirmed) return;
+    bulkApply.disabled = true;
+    try {
+      const result = await core.request("/api/admin/catalog/bulk/apply", {
+        method: "POST",
+        body: JSON.stringify(bulkInput)
+      });
+      renderBulkResult(result, true);
+      bulkResult.hidden = false;
+      bulkApply.hidden = true;
+      showBulkMessage(`Listo: ${result.summary.applied} producto(s) modificado(s).`, "ok");
+      bulkInput = null;
+      bulkPreviewSummary = null;
+      await loadProducts();
+    } catch (error) {
+      showBulkMessage(error.message);
+      bulkApply.disabled = false;
+    }
+  });
+
+  // Estado inicial: el select de categoría solo se muestra con ese alcance.
+  bulkScopeCategory.hidden = true;
+  bulkScopeCategory.disabled = true;
 
   Object.values(filters).forEach((control) => {
     if (control === filters.search) {

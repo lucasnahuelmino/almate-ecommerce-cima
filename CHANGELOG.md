@@ -5,6 +5,25 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
 ---
 
+## [1.12.0] — 2026-10-23
+
+### Panel de administración — Etapa 3: operaciones masivas
+
+#### Agregado
+- Botón "Cambios masivos" en la barra del catálogo con sección de dos pasos: **1. alcance** (productos seleccionados en la lista, con contador en vivo, o categoría completa) y **2. operación** (cambiar precios, publicar u ocultar, destacar o quitar, ajustar stock) con campos dinámicos según la operación elegida.
+- Vista previa obligatoria antes de aplicar: resumen legible ("Subir precios 10 % (redondeo: entero exacto) · 2 producto(s) en alcance · 2 a modificar") y tabla producto a producto con valor actual, valor nuevo y estado ("Se modificará" / "Sin cambios" / "No se puede" + motivo), incluido el aviso cuando cambia la etiqueta de oferta. Nada se aplica sin vista previa + confirmación.
+- `server/services/bulk-ops.js`: cálculo 100 % server-side (el navegador solo manda alcance y operación). Precios por porcentaje o importe con sentido (subir/bajar) y redondeo (entero exacto, múltiplo de 10, múltiplo de 100); stock por suma, resta o valor final que nunca baja de reservas activas; precios entre $1 y $100.000.000 y stock hasta 10.000.000 de unidades, con bloqueo y motivo visibles. Máximo 1000 productos por operación.
+- Endpoints autenticados (sesión + same-origin + CSRF): `POST /api/admin/catalog/bulk/preview` (no escribe) y `POST /api/admin/catalog/bulk/apply` (una sola transacción; recalcula con los datos actuales y no confía en lo enviado por el navegador).
+- `server/db.js`: `patchProductData` con lista blanca (`price`, `comparePrice`, `featured`, `stock`): una operación de precios solo puede tocar el precio; imágenes, descripciones, variantes y el resto son intocables por diseño.
+- La semántica de stock se mantiene íntegra: el cálculo es sobre góndola (físico − vendido) y al aplicar se guarda `data.stock = valorGóndola + vendido`.
+
+#### Cambiado
+- Los endpoints de operaciones masivas responden objeto plano, consistente con el resto de la API admin (detectado como error de renderizado durante la verificación en navegador y corregido antes de cerrar la etapa).
+
+#### Verificado
+- 65/65 pruebas del backend pasaron (55 existentes + 10 nuevas en `bulk-ops.test.js`): autenticación/CSRF/origen, cálculos y redondeos exactos, "la operación de precios no toca ni stock ni otros campos", bloqueo por reservas activas, semántica de góndola + vendido, alcance por categoría sin escrituras y entradas inválidas con mensaje claro.
+- Prueba manual de humo contra el servidor real (preview sin escritura, apply, stock mixto, bloqueo con motivo, ocultar, 400 inválido, limpieza) y verificación completa en navegador: selección, panel, precio +10 %, vista previa, confirmación con diálogo, listado refrescado en $ 11.000 / $ 5.500 y bloqueo visible con motivo.
+
 ## [1.11.0] — 2026-10-23
 
 ### Panel de administración — Etapa 2: gestión de imágenes

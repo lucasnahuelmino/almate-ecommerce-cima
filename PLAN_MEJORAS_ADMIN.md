@@ -2,7 +2,7 @@
 
 > Documento central de planificación y seguimiento.
 > Estado de las etapas: **pendiente** · **en curso** · **bloqueada** · **completada**
-> Última actualización: 2026-10-23 (Etapa 2 completada: gestión de imágenes)
+> Última actualización: 2026-10-23 (Etapa 3 completada: operaciones masivas)
 
 ---
 
@@ -96,7 +96,7 @@ Tablas existentes:
 | Activar/desactivar producto | **Implementada en la Etapa 1** (por fila y masivo por selección; el CSV sigue funcionando) |
 | Borrar producto | **Implementada en la Etapa 1** (solo sin historial; con historial sugiere desactivar) |
 | Subida de imágenes | No existe | Todo (almacenamiento + validación + UI) — Etapa 2 |
-| Actualización masiva de precios/stock | Parcial (publicar/ocultar por selección en Etapa 1) | Ajuste de precios y stock — Etapa 3 |
+| Actualización masiva de precios/stock | **Implementada en la Etapa 3** (precios, publicación, destacados y stock, con vista previa) |
 | Importación CSV | Existe y funciona | Mejorar sin romper compatibilidad — Etapa 4 |
 | Importación Excel (.xlsx) | No existe | Todo (biblioteca aprobada: `exceljs`) — Etapa 4 |
 | Plantilla amigable | CSV técnico con JSON | Plantilla con instrucciones y formato — Etapa 4 |
@@ -159,16 +159,24 @@ Cada etapa termina con pruebas ejecutadas y una parada para tu aprobación.
 
 **Pruebas previstas:** archivo con extensión falsa rechazado; exceso de tamaño rechazado; ruta de cliente ignorada; persistencia tras reinicio del servidor; imagen servida con cabeceras seguras.
 
-### Etapa 3 — Operaciones masivas · Estado: PENDIENTE
+### Etapa 3 — Operaciones masivas · Estado: COMPLETADA (2026-10-23)
 
-- `server/services/bulk-ops.js` (nuevo): vista previa y aplicación transaccional.
-- `server/admin-router.js`: `POST /api/admin/catalog/bulk/preview` y `POST /api/admin/catalog/bulk/apply`.
-- Operaciones: porcentaje o importe fijo sobre precios (con redondeo configurable), activar/desactivar, marcar destacados, ajustar stock (respetando reservas activas).
-- Alcance: por selección de la tabla o por categoría.
-- La vista previa muestra producto a producto: valor actual, valor nuevo, y motivos de los que no se pueden modificar. Nada se aplica sin confirmación.
-- Solo se tocan los campos elegidos: imágenes, descripciones, variantes y stock nunca se alteran en una operación de precios.
+**Backend (implementado)**
 
-**Pruebas previstas:** los cálculos dan el importe esperado; una operación de precios no modifica stock ni otros campos; stock por debajo de reservas activas se rechaza; vista previa sin escrituras.
+- `server/services/bulk-ops.js` (nuevo): `previewBulkOperation` y `applyBulkOperation`. El navegador solo manda alcance (ids de la selección o categoría) y operación; el servidor valida todo, resuelve el alcance con las funciones existentes (`getProductForAdmin`, `listCatalogProductsAdminPaged`) y calcula fila por fila con estado `change` / `noop` / `blocked` más el motivo visible. La vista previa no escribe nada; la aplicación corre en UNA transacción y recalcula con los datos actuales (no confía en lo que envió el navegador). Máximo 1000 productos por operación; si una categoría lo supera, avisa y sugiere usar la selección.
+- Operaciones: precios por porcentaje o importe con sentido (subir/bajar) y redondeo configurable (entero exacto, múltiplo de 10 o múltiplo de 100); publicar/ocultar; destacar/quitar de destacados; stock (sumar, restar o poner un valor final). Semántica de stock respetada: se calcula sobre góndola (físico − vendido), se guarda `data.stock = valorGóndola + vendido` y nunca baja de reservas activas (fila bloqueada con el motivo). Precios fuera de rango ($1 a $100.000.000) y stock fuera de rango también se bloquean con motivo; un cambio que altera la etiqueta de oferta (precio tachado) se avisa como nota.
+- `server/db.js`: nueva función `patchProductData` con lista blanca (`PATCHABLE_PRODUCT_FIELDS`: `price`, `comparePrice`, `featured`, `stock`) que solo puede tocar esos campos del JSON. Imágenes, descripciones, variantes y el resto son intocables por diseño (un intento fuera de la lista lanza error).
+- `server/admin-router.js`: `POST /api/admin/catalog/bulk/preview` y `POST /api/admin/catalog/bulk/apply`, con sesión + same-origin + CSRF como el resto de mutaciones. Responden objeto plano, consistente con el resto de la API admin.
+
+**Panel (implementado)**
+
+- `server/admin/index.html`, `catalog.js`, `admin.css`: botón "Cambios masivos" en la barra del catálogo (con `aria-expanded`/`aria-controls`) y sección con dos pasos: **1. alcance** (selección de la lista con contador en vivo, o categoría completa) y **2. operación** (campos dinámicos según la elegida: sentido/tipo/valor/redondeo en precios; Sí/No en publicación y destacados; tipo de ajuste/unidades en stock). Botón "Ver vista previa" que muestra resumen legible ("Subir precios 10 % (redondeo: entero exacto) · 2 producto(s) en alcance · 2 a modificar") y tabla producto a producto (Producto · Valor actual · Valor nuevo · Estado) con estados "Se modificará", "Sin cambios" y "No se puede" + motivo, y nota cuando cambia la etiqueta de oferta. El botón "Aplicar N cambio(s)…" solo aparece con una vista previa fresca (tocar cualquier control la invalida), pide confirmación con `window.confirm` y tras aplicar muestra "Listo: N producto(s) modificado(s)." y refresca el listado. Nada se aplica sin vista previa + confirmación.
+
+**Pruebas (ejecutadas)**
+
+- Nuevas: `server/test/bulk-ops.test.js` con 10 pruebas: autenticación/CSRF/origen (preview y apply), cálculo de porcentaje esperado sin escrituras, los tres modos de redondeo con importes exactos, la operación de precios no toca stock ni ningún otro campo (comparación campo por campo antes/después), mezcla de cambio y bloqueado aplicando solo el válido, stock bloqueado por reservas activas con el motivo, semántica de stock (guardado = góndola + vendido y `availableStock` correcto), operaciones de publicación/destacados sin tocar precios, alcance por categoría sin escrituras, y entradas inválidas rechazadas con mensajes claros (400).
+- Resultado: **65/65 pruebas pasaron** (las 55 existentes + 10 nuevas). Además, prueba manual de humo contra el servidor real (vista previa sin escritura, apply de precios con stock intacto, ajuste de stock mixto, bloqueo con motivo, ocultar, entrada inválida 400 y borrado de limpieza) y verificación completa en navegador: selección de 2 productos, apertura del panel con contador "(2)", precio +10 %, vista previa con resumen y filas `$ 10.000 → $ 11.000`, confirmación con diálogo, mensaje "Listo: 2 producto(s) modificado(s)" con el listado refrescado en $ 11.000 / $ 5.500, y bloqueo visible con motivo al restar 100 unidades de stock.
+- **Detalle corregido durante la verificación:** los endpoints respondían `{ result: … }` en vez del objeto plano que usa el resto de la API admin; el navegador mostró un error de JS al renderizar la vista previa. Se corrigió el shape de respuesta, se actualizaron tests y humo, y se repitió la verificación completa con resultado correcto.
 
 ### Etapa 4 — Importación y exportación de Excel y CSV · Estado: PENDIENTE
 
@@ -284,9 +292,9 @@ Informe final de cada etapa: qué pruebas se ejecutaron, cuáles pasaron, cuále
 | 0 — Auditoría y planificación | **completada** | 2026-10-23 | 30/30 pruebas existentes pasaron; no se modificó ningún archivo del sistema |
 | 1 — Catálogo y edición individual | **completada** | 2026-10-23 | 41/41 pruebas pasaron (30 existentes + 11 nuevas en `admin-catalog.test.js`); prueba manual de humo y verificación en navegador |
 | 2 — Imágenes | **completada** | 2026-10-23 | 55/55 pruebas pasaron (41 existentes + 14 nuevas en `media.test.js`); prueba manual de humo y verificación completa en navegador |
-| 3 — Operaciones masivas | pendiente | — | — |
+| 3 — Operaciones masivas | **completada** | 2026-10-23 | 65/65 pruebas pasaron (55 existentes + 10 nuevas en `bulk-ops.test.js`); prueba manual de humo y verificación completa en navegador (vista previa, confirmación, apply y bloqueo con motivo) |
 | 4 — Excel y CSV | pendiente | — | — |
 | 5 — Seguridad, historial y respaldo | pendiente | — | — |
 
 **Problemas pendientes de esta fase:**
-- Ninguno. Etapa 2 completada y a la espera de tu "OK" para comenzar la Etapa 3 (operaciones masivas).
+- Ninguno. Etapa 3 completada y a la espera de tu "OK" para comenzar la Etapa 4 (Excel y CSV con `exceljs`).

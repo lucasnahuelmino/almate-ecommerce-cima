@@ -22,6 +22,7 @@ const {
 } = require("./services/catalog-manage");
 const { listCategories } = require("./db");
 const { createMediaService } = require("./services/media");
+const { applyBulkOperation, previewBulkOperation } = require("./services/bulk-ops");
 
 const privateOrderFields = (request, response, next) => {
   response.set({
@@ -290,6 +291,38 @@ const createAdminRouter = ({ database, adminAuth, mediaDirectory = null }) => {
       try {
         deleteProduct(database, request.params.id);
         response.status(204).end();
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  /* ---------- Operaciones masivas (Etapa 3) ---------- */
+
+  // Vista previa y aplicación: el servidor calcula todo; el navegador solo
+  // manda alcance (ids o categoría) y operación. La vista previa no escribe.
+  router.post(
+    "/catalog/bulk/preview",
+    requireSameOrigin,
+    requireSession,
+    requireCsrf,
+    (request, response, next) => {
+      try {
+        response.json(previewBulkOperation(database, request.body));
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  router.post(
+    "/catalog/bulk/apply",
+    requireSameOrigin,
+    requireSession,
+    requireCsrf,
+    (request, response, next) => {
+      try {
+        response.json(applyBulkOperation(database, request.body));
       } catch (error) {
         next(error);
       }

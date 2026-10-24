@@ -758,6 +758,33 @@ const setCatalogProductActive = (database, id, active) => {
   return database.prepare("SELECT id FROM products WHERE id = ?").get(id);
 };
 
+/** Campos del JSON que se pueden modificar de forma puntual (operaciones masivas). */
+const PATCHABLE_PRODUCT_FIELDS = new Set(["price", "comparePrice", "featured", "stock"]);
+
+/**
+ * Aplica cambios puntuales SOLO sobre campos permitidos del JSON data.
+ * No toca imágenes, descripciones, variantes ni ningún otro campo.
+ * `changes` viene ya validado desde bulk-ops.js (el validador es quien
+ * decide qué valores son correctos; acá solo se aplica la lista blanca).
+ * Devuelve false si el producto no existe.
+ */
+const patchProductData = (database, id, changes) => {
+  const row = database.prepare("SELECT data FROM products WHERE id = ?").get(id);
+  if (!row) return false;
+  const product = JSON.parse(row.data);
+  Object.entries(changes).forEach(([field, value]) => {
+    if (!PATCHABLE_PRODUCT_FIELDS.has(field)) {
+      throw Object.assign(
+        new Error(`El campo "${field}" no se puede modificar de forma puntual.`),
+        { status: 500 }
+      );
+    }
+    product[field] = value;
+  });
+  database.prepare("UPDATE products SET data = ? WHERE id = ?").run(JSON.stringify(product), id);
+  return true;
+};
+
 /** Devuelve qué identificadores (id, sku, slug) ya están tomados por OTRO producto. */
 const catalogProductConflicts = (database, { id = "", sku = "", slug = "", excludeId = "" }) => {
   const row = database.prepare(
@@ -835,5 +862,6 @@ module.exports = {
   catalogProductConflicts,
   categoryExists,
   catalogImageUsage,
+  patchProductData,
   deleteProductForAdmin
 };

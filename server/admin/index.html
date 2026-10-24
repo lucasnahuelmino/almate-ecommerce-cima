@@ -52,10 +52,11 @@
         <div class="catalog-toolbar">
           <div>
             <h2 id="catalog-title">Productos</h2>
-            <p>Creá, editá y publicá productos de a uno. Para cambios masivos, usá la importación CSV más abajo.</p>
+            <p>Creá, editá y publicá productos de a uno, o hacé cambios masivos de precios, publicación, destacados y stock.</p>
           </div>
           <div class="catalog-toolbar__actions">
             <a class="button button--secondary" href="/api/admin/catalog.csv">Descargar CSV</a>
+            <button class="button button--secondary" type="button" data-bulk-open aria-expanded="false" aria-controls="bulk-ops">Cambios masivos</button>
             <button class="button button--primary" type="button" data-product-new>Nuevo producto</button>
           </div>
         </div>
@@ -246,6 +247,127 @@
           <button class="button button--secondary" type="button" data-bulk-publish>Publicar seleccionados</button>
           <button class="button button--secondary" type="button" data-bulk-unpublish>Ocultar seleccionados</button>
         </div>
+
+        <!-- Operaciones masivas (Etapa 3): alcance + operación + vista previa -->
+        <section class="bulk-ops" id="bulk-ops" data-bulk-ops hidden aria-labelledby="bulk-ops-title">
+          <h3 id="bulk-ops-title">Cambios masivos</h3>
+
+          <fieldset class="bulk-ops__section">
+            <legend>1. ¿Qué productos querés modificar?</legend>
+            <div class="bulk-ops__scope">
+              <label class="bulk-ops__option">
+                <input type="radio" name="bulk-scope" value="selection" data-bulk-scope="selection" checked>
+                Los seleccionados en la lista (<span data-bulk-scope-count>0</span>)
+              </label>
+              <label class="bulk-ops__option">
+                <input type="radio" name="bulk-scope" value="category" data-bulk-scope="category">
+                Todos los de una categoría:
+                <select data-bulk-scope-category aria-label="Categoría a modificar">
+                  <option value="">Elegir categoría…</option>
+                </select>
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset class="bulk-ops__section">
+            <legend>2. ¿Qué cambio querés hacer?</legend>
+            <div class="bulk-ops__operation">
+              <div class="field">
+                <label for="bulk-kind">Operación</label>
+                <select id="bulk-kind" data-bulk-kind>
+                  <option value="">Elegir operación…</option>
+                  <option value="price">Cambiar precios</option>
+                  <option value="active">Publicar u ocultar</option>
+                  <option value="featured">Destacar o quitar de destacados</option>
+                  <option value="stock">Ajustar stock</option>
+                </select>
+              </div>
+
+              <!-- Campos de precio -->
+              <div class="bulk-ops__fields" data-bulk-price-fields hidden>
+                <div class="field">
+                  <label for="bulk-price-direction">Sentido</label>
+                  <select id="bulk-price-direction" data-bulk-price-direction>
+                    <option value="up">Subir</option>
+                    <option value="down">Bajar</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="bulk-price-mode">Tipo de cambio</label>
+                  <select id="bulk-price-mode" data-bulk-price-mode>
+                    <option value="percent">Un porcentaje (%)</option>
+                    <option value="amount">Un importe en pesos ($)</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="bulk-price-value" data-bulk-price-value-label>Valor (%)</label>
+                  <input id="bulk-price-value" type="number" data-bulk-price-value min="0.01" max="1000" step="0.5" inputmode="decimal" placeholder="Ej.: 10">
+                </div>
+                <div class="field">
+                  <label for="bulk-price-rounding">Redondeo</label>
+                  <select id="bulk-price-rounding" data-bulk-price-rounding>
+                    <option value="exact">Entero exacto</option>
+                    <option value="to10">Al múltiplo de 10 más cercano</option>
+                    <option value="to100">Al múltiplo de 100 más cercano</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Campos de publicación y destacados -->
+              <div class="bulk-ops__fields" data-bulk-bool-fields hidden>
+                <div class="field">
+                  <label for="bulk-bool-value" data-bulk-bool-label>Nuevo estado</label>
+                  <select id="bulk-bool-value" data-bulk-bool-value>
+                    <option value="true">Sí</option>
+                    <option value="false">No</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Campos de stock -->
+              <div class="bulk-ops__fields" data-bulk-stock-fields hidden>
+                <div class="field">
+                  <label for="bulk-stock-mode">Tipo de ajuste</label>
+                  <select id="bulk-stock-mode" data-bulk-stock-mode>
+                    <option value="increase">Sumar unidades</option>
+                    <option value="decrease">Restar unidades</option>
+                    <option value="set">Poner el stock en…</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="bulk-stock-value" data-bulk-stock-value-label>Unidades a sumar</label>
+                  <input id="bulk-stock-value" type="number" data-bulk-stock-value min="0" step="1" inputmode="numeric" placeholder="Ej.: 5">
+                </div>
+              </div>
+            </div>
+            <p class="field-hint">Nada se aplica hasta que veas la vista previa y confirmes.</p>
+          </fieldset>
+
+          <div class="bulk-ops__actions">
+            <button class="button button--secondary" type="button" data-bulk-preview>Ver vista previa</button>
+            <button class="button button--primary" type="button" data-bulk-apply hidden>Aplicar cambios…</button>
+          </div>
+
+          <p class="message" data-bulk-message role="status" aria-live="polite" hidden></p>
+
+          <div class="bulk-ops__result" data-bulk-result hidden>
+            <p class="bulk-ops__summary" data-bulk-summary></p>
+            <div class="table-wrap">
+              <table class="catalog-table bulk-ops__table">
+                <caption class="visually-hidden">Vista previa de los cambios masivos</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Producto</th>
+                    <th scope="col">Valor actual</th>
+                    <th scope="col">Valor nuevo</th>
+                    <th scope="col">Estado</th>
+                  </tr>
+                </thead>
+                <tbody data-bulk-result-rows></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
 
         <div class="table-wrap">
           <table class="catalog-table">
