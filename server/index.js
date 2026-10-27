@@ -43,6 +43,13 @@ const mediaDirectory = path.isAbsolute(uploadsPath)
   ? uploadsPath
   : path.resolve(__dirname, uploadsPath);
 
+// Carpeta de respaldos verificables (Etapa 5): se copia la base antes de
+// importaciones y cambios masivos. Cambiable con BACKUP_DIR.
+const backupsPath = process.env.BACKUP_DIR || "./data/backups";
+const backupDirectory = path.isAbsolute(backupsPath)
+  ? backupsPath
+  : path.resolve(__dirname, backupsPath);
+
 const checkoutService = createCheckoutService({
   database,
   config: loadStoreConfig(),
@@ -67,7 +74,8 @@ const app = createApp({
   whatsappOrderService,
   adminAuth,
   trustProxyHops,
-  mediaDirectory
+  mediaDirectory,
+  backupDirectory
 });
 const server = app.listen(port, () => {
   console.log(`CIMA API escuchando en http://localhost:${port}`);

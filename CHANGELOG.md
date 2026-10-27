@@ -5,6 +5,21 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
 ---
 
+## [1.14.0] — 2026-10-26
+
+### Panel de administración — Etapa 5: auditoría, respaldos e historial
+
+#### Agregado
+- Nueva tabla `admin_audit_log` (creación incremental en bases existentes) y registro de **toda acción del panel**: crear, editar (campo por campo con valores **anterior → nuevo**), duplicar, archivar, borrar, operaciones masivas, importaciones (CSV técnico y archivo), subidas/borrados de imágenes, respaldos y reversiones. Los intentos fallidos quedan registrados con resultado `error`. El registro **nunca rompe la operación principal**: si falla, se avisa por consola y la operación continúa.
+- **Respaldo verificable antes de operaciones de riesgo**: `POST /catalog/import`, `/catalog/bulk/apply` y `/catalog/enhanced/apply` copian la base con la online backup API de better-sqlite3 a `BACKUP_DIR` (por defecto `server/data/backups/`) y verifican la copia con `PRAGMA integrity_check` (si falla, se borra el archivo y **la operación no corre**). Retención de los últimos 30 respaldos. Cada respaldo queda también registrado en el historial con su nombre y peso.
+- Nueva sección **"Historial"** en el panel (junto a Pedidos y Catálogo): tabla con fecha, acción, detalle legible ("Precio: $ 89.900 → $ 90.600 · respaldo previo: …"), resultado y paginación, servida por `GET /api/admin/audit` (solo sesión, sin exponer el detalle crudo).
+- Botón **"Deshacer"** en las entradas de precio/stock: `POST /api/admin/audit/:id/revert` (sesión + mismo origen + CSRF) revierte **exactamente lo que el registro guardó**, con validación completa antes de escribir (todo-o-nada en una transacción): precios en rango y stock nunca por debajo de reservas activas (si no, 409 sin tocar nada). La reversión queda registrada como `audit.revert` y también es reversible.
+- Nuevo servicio `server/services/audit.js` (resúmenes en español rioplatense, listado paginado, reversión) y `server/services/backup.js` (creación + verificación + retención). `app.js`/`index.js`/`.env.example` soportan `BACKUP_DIR`; sin configurar, no se escribe en disco (suites herméticas).
+
+#### Verificado
+- 92/92 pruebas del backend pasaron (80 existentes + 12 nuevas en `audit.test.js`): registro con antes/después, errores como resultado `error`, respaldos verificables (CSV, archivo y retención de 30), masivas con datos de reversión (precio/stock) y sin reversión para publicar/ocultar, `GET /audit` con sesión y paginación, doble reversión, bloqueo por reservas sin escritura, pedidos e importes intactos, y 403/404 en la reversión sin CSRF o con id inválido.
+- Humo HTTP por API y verificación en navegador: sección Historial con las entradas reales, clic en "Deshacer", confirmación y mensaje de éxito "Listo: se revirtió(n) 1 cambio(s) de precio/stock." con el precio restaurado (captura de pantalla no disponible por la ventana de escritorio; los estados se leyeron del DOM).
+
 ## [1.13.0] — 2026-10-23
 
 ### Panel de administración — Etapa 4: importación amigable de Excel y CSV

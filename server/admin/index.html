@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="/admin/admin.css">
     <script src="/admin/admin.js" defer></script>
     <script src="/admin/catalog.js" defer></script>
+    <script src="/admin/history.js" defer></script>
   </head>
   <body>
     <main class="admin-shell">
@@ -33,6 +34,7 @@
       <nav class="admin-nav" data-admin-nav aria-label="Secciones del panel" hidden>
         <button class="admin-nav__tab" type="button" data-nav-tab="orders" aria-current="page">Pedidos</button>
         <button class="admin-nav__tab" type="button" data-nav-tab="catalog">Catálogo</button>
+        <button class="admin-nav__tab" type="button" data-nav-tab="history">Historial</button>
       </nav>
 
       <section class="orders-panel" data-orders-panel hidden aria-labelledby="orders-title">
@@ -393,6 +395,35 @@
           <button class="button button--secondary" type="button" data-page-prev>Anterior</button>
           <span data-page-info></span>
           <button class="button button--secondary" type="button" data-page-next>Siguiente</button>
+        </div>
+      </section>
+
+      <section class="history-panel" data-history-panel hidden aria-labelledby="history-title">
+        <div>
+          <h2 id="history-title">Historial</h2>
+          <p>Cada acción del panel queda registrada con qué cambió y en qué momento. Los cambios de precio y stock se pueden deshacer (se restaura exactamente lo que mostró el registro).</p>
+        </div>
+        <div class="table-wrap">
+          <table class="catalog-table history-table">
+            <caption class="visually-hidden">Historial de acciones del panel</caption>
+            <thead>
+              <tr>
+                <th scope="col">Fecha</th>
+                <th scope="col">Acción</th>
+                <th scope="col">Detalle</th>
+                <th scope="col">Resultado</th>
+                <th scope="col">Revertir</th>
+              </tr>
+            </thead>
+            <tbody data-history-rows></tbody>
+          </table>
+        </div>
+        <p class="empty-state" data-history-empty hidden>Todavía no hay acciones registradas.</p>
+        <p class="message" data-history-message role="status" aria-live="polite" hidden></p>
+        <div class="pagination">
+          <button class="button button--secondary" type="button" data-history-prev>Anterior</button>
+          <span data-history-info></span>
+          <button class="button button--secondary" type="button" data-history-next>Siguiente</button>
         </div>
       </section>
 

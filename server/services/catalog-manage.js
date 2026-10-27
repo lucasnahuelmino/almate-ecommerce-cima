@@ -23,6 +23,7 @@ const {
   validateProductLists,
   validateProductTexts
 } = require("./product-rules");
+const { recordAdminAudit } = require("./audit");
 
 /** Error con código HTTP listo para el middleware de errores. */
 const httpError = (status, message) => Object.assign(new Error(message), { status });
@@ -189,6 +190,27 @@ const validateForSave = (database, product, { excludeId = "" } = {}) => {
   validateProductTexts(product);
 };
 
+/* ---------- Auditoría de ediciones (Etapa 5) ---------- */
+
+/** Campos comparados para registrar qué cambió en cada edición. */
+const AUDITED_FIELDS = [
+  "name", "sku", "slug", "category", "subcategory", "price", "comparePrice",
+  "stock", "images", "shortDescription", "description", "specs", "variants",
+  "tags", "featured", "active"
+];
+
+/** Diferencias campo por campo entre el producto antes y después de editar. */
+const diffProducts = (before, after) =>
+  AUDITED_FIELDS
+    .filter((field) =>
+      JSON.stringify(before[field] === undefined ? null : before[field]) !==
+      JSON.stringify(after[field] === undefined ? null : after[field]))
+    .map((field) => ({
+      field,
+      before: before[field] === undefined ? null : before[field],
+      after: after[field] === undefined ? null : after[field]
+    }));
+
 /** Listado con filtros, orden y paginación (mismos datos que ve el formulario). */
 const listProducts = (database, query, now) =>
   listCatalogProductsAdminPaged(database, parseListFilters(query), now);
@@ -206,7 +228,15 @@ const createProduct = (database, body, now) => {
   validateForSave(database, product);
   product.sortOrder = nextProductSortOrder(database);
   upsertProductRow(database, product);
-  return getProductForAdmin(database, product.id, now);
+  const created = getProductForAdmin(database, product.id, now);
+  recordAdminAudit(database, {
+    action: "product.create",
+    entity: "product",
+    entityId: created.id,
+    detail: { name: created.name, sku: created.sku, price: created.price, stock: created.stock },
+    now
+  });
+  return created;
 };
 
 /** Actualiza un producto existente conservando lo que el formulario no envía. */
@@ -216,7 +246,30 @@ const updateProduct = (database, id, body, now) => {
   validateForSave(database, product, { excludeId: id });
   product.sortOrder = existing.sortOrder;
   upsertProductRow(database, product);
-  return getProductForAdmin(database, id, now);
+  const updated = getProductForAdmin(database, id, now);
+  const changes = diffProducts(existing, updated);
+  recordAdminAudit(database, {
+    action: "product.update",
+    entity: "product",
+    entityId: id,
+    detail: {
+      name: updated.name,
+      changes,
+      // Solo precio y stock guardan datos para poder revertir (Etapa 5).
+      revertChanges: changes
+        .filter((change) => change.field === "price" || change.field === "stock")
+        .map((change) => ({
+          productId: id,
+          name: updated.name,
+          sku: updated.sku,
+          field: change.field,
+          before: change.before,
+          after: change.after
+        }))
+    },
+    now
+  });
+  return updated;
 };
 
 /** Duplica un producto: mismo contenido, nuevo SKU/slug, arranca inactivo. */
@@ -252,20 +305,46 @@ const duplicateProduct = (database, id, now) => {
   copy.stock = source.stock + source.sold;
   validateForSave(database, copy);
   upsertProductRow(database, copy);
-  return getProductForAdmin(database, copy.id, now);
+  const created = getProductForAdmin(database, copy.id, now);
+  recordAdminAudit(database, {
+    action: "product.duplicate",
+    entity: "product",
+    entityId: created.id,
+    detail: { name: source.name, copyName: created.name, sku: created.sku, sourceId: id },
+    now
+  });
+  return created;
 };
 
 /** Activa o desactiva la publicación de un producto. */
 const setProductActive = (database, id, active, now) => {
   getProductForAdmin(database, id, now);
   setCatalogProductActive(database, id, active);
-  return getProductForAdmin(database, id, now);
+  const updated = getProductForAdmin(database, id, now);
+  recordAdminAudit(database, {
+    action: "product.archive",
+    entity: "product",
+    entityId: id,
+    detail: { name: updated.name, sku: updated.sku, active: Boolean(active) },
+    now
+  });
+  return updated;
 };
 
 /** Elimina un producto SOLO si no tiene ventas ni reservas (si no, 409). */
-const deleteProduct = (database, id) => {
+const deleteProduct = (database, id, now) => {
+  const existing = getProductForAdmin(database, id, now);
   const removed = deleteProductForAdmin(database, id);
   if (!removed) throw httpError(404, "Producto no encontrado.");
+  recordAdminAudit(database, {
+    action: "product.delete",
+    entity: "product",
+    entityId: id,
+    detail: existing
+      ? { name: existing.name, sku: existing.sku, price: existing.price }
+      : {},
+    now
+  });
 };
 
 module.exports = {

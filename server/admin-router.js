@@ -29,6 +29,12 @@ const {
   buildFriendlyTemplate,
   exportCatalogFriendly
 } = require("./services/catalog-import-enhanced");
+const { createDatabaseBackup } = require("./services/backup");
+const {
+  listAdminAudit,
+  recordAdminAudit,
+  revertAdminAudit
+} = require("./services/audit");
 
 const privateOrderFields = (request, response, next) => {
   response.set({
@@ -39,9 +45,45 @@ const privateOrderFields = (request, response, next) => {
   next();
 };
 
-const createAdminRouter = ({ database, adminAuth, mediaDirectory = null }) => {
+const createAdminRouter = ({
+  database,
+  adminAuth,
+  mediaDirectory = null,
+  // null = no escribe respaldos en disco (pruebas herméticas).
+  backupDirectory = null
+}) => {
   const router = express.Router();
   const media = mediaDirectory ? createMediaService({ directory: mediaDirectory }) : null;
+
+  /* ---------- Auditoría y respaldos (Etapa 5) ---------- */
+
+  /**
+   * Crea un respaldo verificable y lo registra en el historial.
+   * Si el respaldo falla, LANZA: la operación de riesgo NO se ejecuta sin
+   * respaldo previo.
+   */
+  const backupBefore = async (reason) => {
+    const backup = await createDatabaseBackup(database, { directory: backupDirectory, reason });
+    if (backup) {
+      recordAdminAudit(database, {
+        action: "backup.create",
+        entity: "database",
+        detail: { reason, file: backup.file, bytes: backup.bytes }
+      });
+    }
+    return backup;
+  };
+
+  /** Registra un intento fallido en el historial (nunca relanza). */
+  const auditFailure = (action, entity, entityId, error) => {
+    recordAdminAudit(database, {
+      action,
+      entity,
+      entityId: String(entityId || ""),
+      result: "error",
+      detail: { error: error.message || "Error desconocido" }
+    });
+  };
 
   const isSameOrigin = (request) =>
     request.get("origin") === `${request.protocol}://${request.get("host")}`;
@@ -121,17 +163,29 @@ const createAdminRouter = ({ database, adminAuth, mediaDirectory = null }) => {
     requireSession,
     requireCsrf,
     express.text({ type: ["text/csv", "text/plain"], limit: "2mb" }),
-    (request, response, next) => {
+    async (request, response, next) => {
       if (typeof request.body !== "string") {
         response.status(400).json({ error: "Enviá el archivo como texto CSV." });
         return;
       }
+      const isImport = request.path === "/catalog/import";
       try {
-        const result = request.path === "/catalog/preview"
-          ? previewCatalogCsv(database, request.body)
-          : importCatalogCsv(database, request.body);
+        // Antes de escribir (solo en la importación real): respaldo verificable.
+        // Si el respaldo falla, la importación NO corre.
+        const backup = isImport ? await backupBefore("catalog-import") : null;
+        const result = isImport
+          ? importCatalogCsv(database, request.body)
+          : previewCatalogCsv(database, request.body);
+        if (isImport) {
+          recordAdminAudit(database, {
+            action: "catalog.import",
+            entity: "database",
+            detail: { added: result.added, updated: result.updated, backup: backup?.file || "" }
+          });
+        }
         response.json({ result });
       } catch (error) {
+        if (isImport) auditFailure("catalog.import", "database", "", error);
         next(error);
       }
     }
@@ -220,6 +274,7 @@ const createAdminRouter = ({ database, adminAuth, mediaDirectory = null }) => {
       try {
         response.status(201).json({ product: createProduct(database, request.body) });
       } catch (error) {
+        auditFailure("product.create", "product", "", error);
         next(error);
       }
     }
@@ -238,6 +293,7 @@ const createAdminRouter = ({ database, adminAuth, mediaDirectory = null }) => {
       try {
         response.json({ product: updateProduct(database, request.params.id, request.body) });
       } catch (error) {
+        auditFailure("product.update", "product", request.params.id, error);
         next(error);
       }
     }
@@ -256,6 +312,7 @@ const createAdminRouter = ({ database, adminAuth, mediaDirectory = null }) => {
       try {
         response.status(201).json({ product: duplicateProduct(database, request.params.id) });
       } catch (error) {
+        auditFailure("product.duplicate", "product", request.params.id, error);
         next(error);
       }
     }
@@ -279,6 +336,7 @@ const createAdminRouter = ({ database, adminAuth, mediaDirectory = null }) => {
       try {
         response.json({ product: setProductActive(database, request.params.id, active) });
       } catch (error) {
+        auditFailure("product.archive", "product", request.params.id, error);
         next(error);
       }
     }
@@ -298,6 +356,7 @@ const createAdminRouter = ({ database, adminAuth, mediaDirectory = null }) => {
         deleteProduct(database, request.params.id);
         response.status(204).end();
       } catch (error) {
+        auditFailure("product.delete", "product", request.params.id, error);
         next(error);
       }
     }
@@ -326,10 +385,37 @@ const createAdminRouter = ({ database, adminAuth, mediaDirectory = null }) => {
     requireSameOrigin,
     requireSession,
     requireCsrf,
-    (request, response, next) => {
+    async (request, response, next) => {
       try {
-        response.json(applyBulkOperation(database, request.body));
+        // Respaldo verificable antes de aplicar el cambio masivo.
+        const backup = await backupBefore("catalog-bulk");
+        const result = applyBulkOperation(database, request.body);
+        // Para revertir después: solo las filas que realmente cambiaron
+        // y solo precio/stock (lo mismo que el registro guardó).
+        const revertChanges = result.rows
+          .filter((row) => row.status === "change" && (result.field === "price" || result.field === "stock"))
+          .map((row) => ({
+            productId: row.id,
+            name: row.name,
+            sku: row.sku,
+            field: result.field,
+            before: row.current,
+            after: row.next
+          }));
+        recordAdminAudit(database, {
+          action: "catalog.bulk",
+          entity: "product",
+          detail: {
+            field: result.field,
+            description: result.description,
+            summary: result.summary,
+            backup: backup?.file || "",
+            revertChanges
+          }
+        });
+        response.json(result);
       } catch (error) {
+        auditFailure("catalog.bulk", "product", "", error);
         next(error);
       }
     }
@@ -392,8 +478,21 @@ const createAdminRouter = ({ database, adminAuth, mediaDirectory = null }) => {
     friendlyImportBody,
     async (request, response, next) => {
       try {
-        response.json(await applyCatalogImport(database, request.body));
+        // Respaldo verificable antes de escribir (si falla, no se importa).
+        const backup = await backupBefore("catalog-import-enhanced");
+        const result = await applyCatalogImport(database, request.body);
+        recordAdminAudit(database, {
+          action: "catalog.import.enhanced",
+          entity: "database",
+          detail: {
+            applied: result.applied || {},
+            summary: result.summary || {},
+            backup: backup?.file || ""
+          }
+        });
+        response.json(result);
       } catch (error) {
+        auditFailure("catalog.import.enhanced", "database", "", error);
         next(error);
       }
     }
@@ -416,8 +515,15 @@ const createAdminRouter = ({ database, adminAuth, mediaDirectory = null }) => {
       }
       try {
         const result = await media.store(request.body);
+        recordAdminAudit(database, {
+          action: "media.upload",
+          entity: "media",
+          entityId: result.name,
+          detail: { name: result.name, size: result.size }
+        });
         response.status(201).json({ media: result });
       } catch (error) {
+        auditFailure("media.upload", "media", "", error);
         next(error);
       }
     }
@@ -450,8 +556,47 @@ const createAdminRouter = ({ database, adminAuth, mediaDirectory = null }) => {
           return;
         }
         await media.remove(name);
+        recordAdminAudit(database, {
+          action: "media.delete",
+          entity: "media",
+          entityId: name,
+          detail: { name }
+        });
         response.status(204).end();
       } catch (error) {
+        auditFailure("media.delete", "media", request.params.name, error);
+        next(error);
+      }
+    }
+  );
+
+  /* ---------- Historial (Etapa 5) ---------- */
+
+  // Listado paginado del historial (solo sesión iniciada; es solo lectura).
+  router.get("/audit", requireSession, (request, response, next) => {
+    try {
+      response.json(listAdminAudit(database, request.query));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Reversión de precio/stock de una entrada (sesión + origen + CSRF).
+  router.post(
+    "/audit/:id/revert",
+    requireSameOrigin,
+    requireSession,
+    requireCsrf,
+    (request, response, next) => {
+      const id = Number(request.params.id);
+      if (!Number.isSafeInteger(id) || id < 1) {
+        response.status(404).json({ error: "Registro de historial no encontrado." });
+        return;
+      }
+      try {
+        response.json(revertAdminAudit(database, id));
+      } catch (error) {
+        auditFailure("audit.revert", "database", String(id), error);
         next(error);
       }
     }

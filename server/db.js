@@ -110,6 +110,20 @@ const schema = `
     ON orders (created_at DESC);
   CREATE INDEX IF NOT EXISTS order_audit_order_id
     ON order_audit (order_id, changed_at DESC);
+
+  -- Auditoría de acciones del panel (Etapa 5). Creación incremental:
+  -- en bases existentes se agrega sin tocar datos previos.
+  CREATE TABLE IF NOT EXISTS admin_audit_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at TEXT NOT NULL,
+    action TEXT NOT NULL,
+    entity TEXT NOT NULL DEFAULT '',
+    entity_id TEXT NOT NULL DEFAULT '',
+    result TEXT NOT NULL DEFAULT 'ok',
+    detail TEXT NOT NULL DEFAULT '{}'
+  );
+  CREATE INDEX IF NOT EXISTS admin_audit_log_created_at
+    ON admin_audit_log (created_at DESC);
 `;
 
 const openDatabase = (databasePath) => {

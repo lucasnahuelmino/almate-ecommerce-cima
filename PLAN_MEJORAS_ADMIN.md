@@ -202,14 +202,16 @@ Cada etapa termina con pruebas ejecutadas y una parada para tu aprobación.
 - **Pruebas ejecutadas:** 80/80 (65 existentes + 15 nuevas en `catalog-import-enhanced.test.js`): seguridad (401/403), celdas vacías conservan datos, VACÍO limpia solo lo opcional, creación con categoría por nombre, imágenes obligatorias en creación, SKU duplicado, ID inexistente, stock bajo reservas, XLSX inválido sin escrituras, archivo sin cambios sin escrituras, columnas ignoradas, separador `;`, plantilla, round-trip exportar→editar→importar y exportación completa.
 - Verificación manual: humo HTTP por API (todo OK) y en navegador real: carga del CSV, informe ("1 a crear", "Se creará"), confirmación ("¿Importar 1 producto(s) nuevo(s)…?"), mensaje "Listo: 1 producto(s) nuevo(s)." y el producto en el listado refrescado. La captura de pantalla no pudo tomarse (ventana de escritorio no visible); los estados se leyeron del DOM.
 
-### Etapa 5 — Seguridad, historial y respaldo · Estado: PENDIENTE
+### Etapa 5 — Seguridad, historial y respaldo · Estado: COMPLETADA (2026-10-26)
 
-- Tabla nueva `admin_audit_log` (creación incremental, compatible con los datos existentes): fecha, acción, entidad, identificador, detalle y resultado. Cubre: crear, editar (con campo y valores anterior/nuevo), duplicar, archivar, borrar, masivas, importaciones y subidas/borrados de imágenes.
-- Respaldo automático antes de operaciones de riesgo (importación y masivas): copia verificable de la base en `server/data/backups/` con fecha y hora, usando el mecanismo de copia seguro de SQLite.
-- Historial visible en el panel y, cuando el registro tenga el detalle suficiente, botón de reversión de operaciones puntuales de precio/stock. No se promete reversión completa: solo se revierte lo que el registro guardó.
+- Tabla nueva `admin_audit_log` (creación incremental, compatible con los datos existentes): fecha, acción, entidad, identificador, detalle y resultado. Cubre: crear, editar (con campo y valores anterior/nuevo), duplicar, archivar, borrar, masivas, importaciones, subidas/borrados de imágenes, respaldos y reversiones.
+- Respaldo automático antes de operaciones de riesgo (importación CSV, importación de archivo y masivas): copia verificable de la base en `server/data/backups/` (`BACKUP_DIR` configurable) con la online backup API de better-sqlite3 + `PRAGMA integrity_check` sobre la copia, retención de los últimos 30. Si el respaldo falla, **la operación no se ejecuta**.
+- Historial visible en el panel (nueva sección "Historial") con fecha, acción, detalle legible, resultado y botón "Deshacer": la reversión es todo-o-nada, valida todo antes de escribir, aplica en una transacción y solo revierte precio/stock (lo que el registro guardó), nunca por debajo de reservas activas. La reversión queda registrada y también es reversible.
 - Se conserva el comportamiento actual de reservas, stock, pagos y notificaciones sin tocarlos.
 
-**Pruebas previstas:** toda acción administrativa queda registrada; el respaldo se crea y es abrible; los pedidos históricos y sus importes no cambian; las pruebas existentes siguen pasando.
+**Pruebas ejecutadas:** 92/92 (80 existentes + 12 nuevas en `audit.test.js`): creación/edición con antes-después, duplicar/archivar/borrar, error registrado como resultado `error`, respaldo CSV y de archivo verificable (`integrity_check` = ok) con su registro, retención de 30 respaldos, masiva con `revertChanges` de precio/stock, publicar no revertible, `GET /audit` con sesión y paginación sin exponer detalle crudo, revert doble (re-revert incluido), revert bloqueado por reservas (409 sin escribir), pedidos e importes intactos antes/después, y revert sin CSRF (403) o con id inválido (404).
+
+**Verificación manual:** humo HTTP por API (login → historial → edición con antes/después → masiva con respaldo en disco de 152 KB → revert restauró el precio exacto) y en navegador real: sección Historial con las 4 entradas, clic en "Deshacer" con diálogo de confirmación, mensaje de éxito visible y precio restaurado (90.600 → 90.500 → 90.600). La captura de pantalla no pudo tomarse (ventana de escritorio no visible); los estados se leyeron del DOM.
 
 ---
 
@@ -306,7 +308,7 @@ Informe final de cada etapa: qué pruebas se ejecutaron, cuáles pasaron, cuále
 | 2 — Imágenes | **completada** | 2026-10-23 | 55/55 pruebas pasaron (41 existentes + 14 nuevas en `media.test.js`); prueba manual de humo y verificación completa en navegador |
 | 3 — Operaciones masivas | **completada** | 2026-10-23 | 65/65 pruebas pasaron (55 existentes + 10 nuevas en `bulk-ops.test.js`); prueba manual de humo y verificación completa en navegador (vista previa, confirmación, apply y bloqueo con motivo) |
 | 4 — Excel y CSV | **completada** | 2026-10-23 | 80/80 pruebas pasaron (65 existentes + 15 nuevas en `catalog-import-enhanced.test.js`); humo HTTP y verificación en navegador (análisis, informe, confirmación, apply y listado refrescado) |
-| 5 — Seguridad, historial y respaldo | pendiente | — | — |
+| 5 — Seguridad, historial y respaldo | **completada** | 2026-10-26 | 92/92 pruebas pasaron (80 existentes + 12 nuevas en `audit.test.js`); humo HTTP y verificación en navegador (historial, confirmación de reversión y precio restaurado) |
 
 **Problemas pendientes de esta fase:**
-- Ninguno. Etapa 4 completada y a la espera de tu "OK" para comenzar la Etapa 5 (auditoría, respaldos e historial).
+- Ninguno. Las 5 etapas de mejoras del panel quedaron completadas.

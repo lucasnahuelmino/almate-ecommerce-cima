@@ -250,7 +250,8 @@ input:focus-visible {
     gap: 0.85rem;
   }
 }
-.catalog-panel {
+.catalog-panel,
+.history-panel {
   display: grid;
   gap: 1rem;
   margin-bottom: 2rem;
@@ -530,6 +531,28 @@ input:focus-visible {
 .tag--accent {
   background: #f7e2dd;
   color: var(--accent);
+}
+
+.tag--error {
+  background: #fbe4e0;
+  color: #a33a25;
+}
+
+/* ---------- Historial (Etapa 5) ---------- */
+
+.history-table__detail {
+  max-width: 34rem;
+  color: var(--muted);
+}
+
+.history-table .button--small {
+  min-height: 2.1rem;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.85rem;
+}
+
+.muted {
+  color: var(--muted);
 }
 
 .empty-state {

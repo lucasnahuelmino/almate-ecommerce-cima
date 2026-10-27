@@ -20,7 +20,9 @@ const createApp = ({
   whatsappOrderService = null,
   adminAuth = createAdminAuth({}),
   trustProxyHops = 0,
-  mediaDirectory = null
+  mediaDirectory = null,
+  // Carpeta de respaldos verificables (Etapa 5); null = no escribir en disco.
+  backupDirectory = null
 }) => {
   if (!database) throw new Error("La base SQLite es obligatoria para iniciar la API.");
 
@@ -175,7 +177,7 @@ const createApp = ({
       return;
     }
     next();
-  }, createAdminRouter({ database, adminAuth, mediaDirectory }));
+  }, createAdminRouter({ database, adminAuth, mediaDirectory, backupDirectory }));
 
   app.get(["/admin", "/admin/"], applyAdminPageHeaders, (request, response, next) => {
     if (!adminAuth.enabled) {

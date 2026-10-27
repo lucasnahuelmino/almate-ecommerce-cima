@@ -15,6 +15,7 @@
   const ordersPanel = document.querySelector("[data-orders-panel]");
   const catalogPanel = document.querySelector("[data-catalog-panel]");
   const csvPanel = document.querySelector("[data-csv-panel]");
+  const historyPanel = document.querySelector("[data-history-panel]");
   const navTabs = Array.from(document.querySelectorAll("[data-nav-tab]"));
   const csvForm = document.querySelector("[data-catalog-form]");
   const csvMessage = document.querySelector("[data-csv-message]");
@@ -26,7 +27,8 @@
   const pageSize = 50;
   const panelsBySection = {
     orders: ordersPanel,
-    catalog: catalogPanel
+    catalog: catalogPanel,
+    history: historyPanel
   };
   const fulfillmentLabels = {
     awaiting_confirmation: "Pendiente de preparación",
@@ -115,6 +117,7 @@
     ordersPanel.hidden = true;
     catalogPanel.hidden = true;
     csvPanel.hidden = true;
+    historyPanel.hidden = true;
     logoutButton.hidden = true;
     loginMessage.textContent = text;
     loginMessage.hidden = !text;
