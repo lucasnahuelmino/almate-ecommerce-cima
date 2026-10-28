@@ -5,6 +5,19 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
 ---
 
+## [1.15.0] — 2026-10-27
+
+### Tienda — Etapa 10A: SEO técnico
+
+#### Agregado
+- `sitemap.xml` con las páginas principales (home, tienda, contacto, envíos, términos, privacidad y arrepentimiento) y `robots.txt` con el apuntado al sitemap. Ambos usan la URL base `https://TU-DOMINIO.example` como placeholder: cuando haya dominio se reemplaza en `js/config.js` (`site.url`), `robots.txt` y `sitemap.xml` (instrucciones en el README).
+- Nuevo `js/core/seo.js` (se carga en las 11 páginas públicas, después de `config.js`): inyecta **`rel="canonical"`** (conserva `?slug=` en producto.html y limpia filtros/parámetros en el resto), **`og:url`**, **`og:image`** (+ ancho/alto) y **`og:site_name`**, y el JSON-LD **`Organization`**. Si el placeholder sigue sin reemplazar (o el sitio se abre con `file://`), usa la dirección actual y no emite URLs rotas.
+- `assets/og-image.png` (1200×630, paleta crema/terracota de la marca) para que los enlaces compartidos en WhatsApp/Instagram muestren tarjeta con imagen; `<meta name="twitter:card" content="summary_large_image">` en las 11 páginas públicas.
+- `noindex, follow` en carrito, checkout, gracias y `estilos.html` (páginas transaccionales o internas que no deben indexarse).
+
+#### Cambiado
+- README: la sección "SEO cuando haya un dominio" pasó a "SEO: URL del sitio y metadatos" con el paso a paso del placeholder, y el checklist de publicación suma el item de reemplazar la URL base.
+
 ## [1.14.0] — 2026-10-26
 
 ### Panel de administración — Etapa 5: auditoría, respaldos e historial

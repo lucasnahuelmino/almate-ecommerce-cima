@@ -1,0 +1,11 @@
+# robots.txt de CIMA
+# IMPORTANTE: antes de publicar, reemplazá "https://TU-DOMINIO.example"
+# por el dominio real (mismo cambio en sitemap.xml y js/config.js).
+
+User-agent: *
+Allow: /
+# Páginas internas de trabajo (no aportan nada a Google):
+Disallow: /estilos.html
+Disallow: /admin
+
+Sitemap: https://TU-DOMINIO.example/sitemap.xml

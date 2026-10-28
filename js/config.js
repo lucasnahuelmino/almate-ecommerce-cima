@@ -16,6 +16,18 @@
    ========================================================================== */
 
 window.STORE_CONFIG = {
+  /* ---------- Sitio (SEO — Etapa 10) ----------
+     URL pública definitiva del sitio, sin barra final. Se usa para el
+     canonical, Open Graph (og:url/og:image) y los datos estructurados.
+     MIENTRAS NO HAYA DOMINIO: dejá el placeholder tal cual: el sitio detecta
+     que no es una URL real y usa la dirección actual automáticamente.
+     Cuando publiques con dominio propio, reemplazá este valor Y la misma URL
+     base en los archivos de la raíz `robots.txt` y `sitemap.xml`
+     (buscá y reemplazá "https://TU-DOMINIO.example"). */
+  site: {
+    url: "https://TU-DOMINIO.example"
+  },
+
   /* ---------- Marca ---------- */
   brand: {
     name: "CIMA",

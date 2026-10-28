@@ -218,11 +218,31 @@ Esta guía prepara un despliegue de prueba con configuración reforzada, no auto
 - [ ] Confirmar precios, ofertas, stock, variantes y tarifas de envío.
 - [ ] Cambiar placeholders por fotos correctas y comprobar cada ruta.
 - [ ] Revisar textos legales con un profesional y completar los datos que faltan.
+- [ ] Reemplazar `https://TU-DOMINIO.example` por el dominio real en `js/config.js`, `robots.txt` y `sitemap.xml`.
 - [ ] Abrir las páginas principales, probar catálogo y filtros, carrito y checkout.
 - [ ] Probar WhatsApp o, si se habilitó Mercado Pago, completar el flujo solo con credenciales y medios de pago TEST.
 - [ ] Probar la web publicada desde teléfono y computadora; corregir enlaces, imágenes o páginas que fallen.
 - [ ] Definir y probar un medio de contacto para recibir y responder las solicitudes.
 
-## SEO cuando haya un dominio
+## SEO: URL del sitio y metadatos
 
-La tienda aún no tiene una URL pública canónica. Cuando se elijan el dominio y el hosting, se podrá preparar `sitemap.xml`, revisar los metadatos Open Graph y definir las URLs HTTPS definitivas. No publiques URLs locales `file://` como sitemap.
+La tienda ya trae los archivos de SEO en la raíz:
+
+- `sitemap.xml` — mapa de las páginas principales para Google.
+- `robots.txt` — reglas para los rastreadores (apunta al sitemap).
+- `js/core/seo.js` — agrega en cada página la URL canónica, la imagen para compartir (`og:image` — ya existe en `assets/og-image.png`, 1200×630) y los datos de la marca (Organization).
+
+Todos usan la misma URL base: `https://TU-DOMINIO.example`. **Cuando tengas el dominio, reemplazá ese texto por la dirección real en tres archivos** (buscar y reemplazar):
+
+1. `js/config.js` → `site.url`
+2. `robots.txt`
+3. `sitemap.xml`
+
+Mientras no se reemplace, el sitio detecta el placeholder y usa la dirección actual automáticamente: probar en local no se rompe nada.
+
+Otras cosas ya configuradas:
+
+- Las páginas de carrito, checkout, gracias y `estilos.html` están marcadas `noindex` (Google no las indexa).
+- Las fichas de producto comparten con tarjeta grande (`summary_large_image`).
+- Para cambiar la imagen que aparece al compartir, reemplazá `assets/og-image.png` por una foto real de 1200×630 px.
+- Cuando haya dominio, registrá el sitemap en Google Search Console.
