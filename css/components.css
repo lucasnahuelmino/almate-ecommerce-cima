@@ -746,3 +746,32 @@ select.field__input {
   padding: var(--space-4) var(--space-5);
   border-top: 1px solid var(--color-border);
 }
+
+/* ==========================================================================
+   REVEAL AL HACER SCROLL (Etapa 10B)
+   --------------------------------------------------------------------------
+   Los bloques con data-reveal entran con un fundido suave cuando aparecen
+   en pantalla. La clase .has-reveal la agrega js/ui/animations.js SOLO si
+   el navegador lo soporta y la persona no pidió menos movimiento: sin JS,
+   o con "prefers-reduced-motion: reduce", el contenido se ve siempre
+   visible y normal (nunca queda algo oculto en pantalla).
+   ========================================================================== */
+
+.has-reveal [data-reveal] {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.has-reveal [data-reveal].is-revealed {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .has-reveal [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}

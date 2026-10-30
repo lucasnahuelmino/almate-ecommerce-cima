@@ -5,6 +5,21 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
 ---
 
+## [1.16.0] — 2026-10-30
+
+### Tienda — Etapa 10B: pulido visual (reveal y tema)
+
+#### Agregado
+- Nuevo `js/ui/animations.js`: revelado progresivo al hacer scroll con `IntersectionObserver`. Los bloques con `data-reveal` entran con un fundido suave cuando aparecen en pantalla.
+  - Seguro por diseño: sin JavaScript, sin IntersectionObserver, o con "reducir movimiento" (`prefers-reduced-motion`) activado en el sistema, el contenido queda visible normalmente — nunca algo oculto en pantalla.
+  - Lo que ya está visible al cargar se marca como visto antes de activar el estado oculto: no hay parpadeo al abrir la página.
+- `data-reveal` en 12 bloques: home (7 secciones: categorías, destacados, ofertas, promesas, sobre la marca, FAQ y cierre), tienda (2), contacto (1) y envíos y devoluciones (2), con `js/ui/animations.js` cargado en esas 4 páginas.
+- Estilos del reveal en `css/components.css` (transición `opacity` + `translateY`, con fallback para movimiento reducido).
+
+#### Verificado
+- Botón de tema claro/oscuro en el header (existente en `js/ui/layout.js`): alterna `data-theme`, persiste la elección en `localStorage` (`cima-theme`) entre páginas, actualiza `aria-pressed`, `title` y el `theme-color`.
+- Scroll progresivo en home: 7/7 secciones reveladas; 0 secciones ocultas visibles; consola sin errores ni warnings en home, tienda, contacto y envíos.
+
 ## [1.15.0] — 2026-10-27
 
 ### Tienda — Etapa 10A: SEO técnico

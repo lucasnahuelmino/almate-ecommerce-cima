@@ -34,6 +34,7 @@
   <script defer src="js/ui/layout.js"></script>
   <script defer src="js/ui/header.js"></script>
   <script defer src="js/ui/mini-cart.js"></script>
+  <script defer src="js/ui/animations.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#contenido">Saltar al contenido</a>
@@ -125,7 +126,7 @@
   </header>
 
   <main class="site-main" id="contenido">
-    <section class="catalog-intro">
+    <section class="catalog-intro" data-reveal>
       <div class="container">
         <p class="eyebrow">CIMA · Bazar, hogar y cocina</p>
         <h1>Tienda</h1>
@@ -133,7 +134,7 @@
       </div>
     </section>
 
-    <section class="catalog-section container" aria-labelledby="catalog-heading">
+    <section class="catalog-section container" data-reveal aria-labelledby="catalog-heading">
       <h2 class="sr-only" id="catalog-heading">Catálogo de productos</h2>
 
       <div class="catalog-toolbar">
