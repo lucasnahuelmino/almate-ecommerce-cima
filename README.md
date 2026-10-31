@@ -12,10 +12,11 @@ Tienda estática hecha con HTML, CSS y JavaScript. No requiere instalar programa
 - [Editar categorías](#editar-categorías)
 - [Cambiar datos del negocio](#cambiar-datos-del-negocio)
 - [Publicar la tienda](#publicar-la-tienda)
-- [API del catálogo — inicio de Fase 2](#api-del-catálogo--inicio-de-fase-2)
+- [Entrega de la Fase 1](#entrega-de-la-fase-1)
+- [API de catálogo y pagos — backend Fase 2](#api-de-catálogo-y-pagos--backend-fase-2)
 - [Límites importantes de esta versión](#límites-importantes-de-esta-versión)
 - [Antes de publicar: checklist](#antes-de-publicar-checklist)
-- [SEO cuando haya un dominio](#seo-cuando-haya-un-dominio)
+- [SEO: URL del sitio y metadatos](#seo-url-del-sitio-y-metadatos)
 
 ## Abrir y probar la tienda
 
@@ -161,6 +162,52 @@ Un despliegue manual puede requerir volver a subir la carpeta cada vez que cambi
 4. Repetí las pruebas y configurá el dominio propio cuando esté definido.
 
 El sitio usa rutas relativas y está preparado para hosting estático y apertura local. En cualquier proveedor, verificá que las rutas de páginas, imágenes, estilos y scripts carguen bien en la URL pública, especialmente si se publica dentro de una subcarpeta.
+
+### Opción C: Vercel
+
+1. Subí los archivos a un repositorio de GitHub bajo la cuenta del titular (igual que en la Opción B).
+2. En Vercel, elegí **Add New → Project** e importá ese repositorio.
+3. En la configuración del proyecto, dejá **Framework Preset: Other**, **Build Command vacío** y **Output Directory: la raíz** (`.`). La tienda no se compila: se publica tal cual.
+4. Desplegá, abrí la URL de prueba y repetí las pruebas de compra y contacto.
+5. Cada vez que subas cambios al repositorio, Vercel vuelve a publicar el sitio automáticamente.
+
+En Vercel y en cualquier hosting, `404.html` se puede configurar como página de error personalizada, pero el nombre exacto y el lugar de configuración dependen del proveedor. Si no la configura, el sitio igual funciona; solo se ve la página de error genérica.
+
+## Entrega de la Fase 1
+
+Esta es la tienda completa **sin backend obligatorio**: se abre con doble clic, se publica como sitio estático y el pedido se envía por WhatsApp. Sirve para empezar a mostrar el catálogo y recibir consultas mientras se define cómo se cobra.
+
+### Qué incluye
+
+| Pieza | Estado |
+| --- | --- |
+| Catálogo con 24 productos, 9 categorías, filtros, búsqueda y orden | Listo |
+| Ficha de producto con galería, variantes, stock y relacionados | Listo |
+| Carrito persistente, mini-carrito y página de carrito | Listo |
+| Checkout por pasos con validaciones argentinas y envío por zona | Listo |
+| Pedido por WhatsApp con resumen automático | Listo |
+| Páginas de contacto, envíos, términos, privacidad y arrepentimiento | Plantillas base |
+| SEO (títulos, descripciones, sitemap, robots, datos estructurados) | Listo |
+| Accesibilidad y diseño responsive (360, 768, 1024 y 1440 px) | Listo |
+
+### Cómo se verificó
+
+- Consola del navegador sin errores ni advertencias en las 12 páginas públicas.
+- Sin desplazamiento horizontal en las 12 páginas en los cuatro anchos de pantalla.
+- Auditoría automática de accesibilidad, buenas prácticas y SEO: 100/100/100 en tema claro y oscuro (página de inicio).
+- Pruebas automatizadas del backend (92) aprobadas, aunque el backend no sea necesario para esta fase.
+- El detalle de cada etapa queda en `CHANGELOG.md`.
+
+### Qué falta antes de vender de verdad
+
+1. **Fotos reales** de los productos y categorías (hoy son placeholders): ver [Cambiar fotos](#cambiar-fotos) y la [lista de imágenes](./LISTA-IMAGENES.md).
+2. **Precios, stock y envíos confirmados** por el negocio.
+3. **Textos legales revisados** por contador o abogado, con razón social y CUIT definitivos.
+4. **Dominio propio** reemplazando `https://TU-DOMINIO.example` (ver [SEO](#seo-url-del-sitio-y-metadatos)).
+5. **WhatsApp y datos de contacto reales** en `js/config.js`.
+6. **Publicación** en el hosting elegido y prueba final desde el teléfono.
+
+> Nada de esto bloquea la revisión: la tienda se puede navegar y probar completa hoy mismo con los datos de ejemplo.
 
 ## API de catálogo y pagos — backend Fase 2
 

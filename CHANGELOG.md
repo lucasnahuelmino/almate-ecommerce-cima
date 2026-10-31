@@ -5,6 +5,20 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
 ---
 
+## [1.18.0] — 2026-10-31
+
+### Tienda — Etapa 11: documentación y entrega de la Fase 1
+
+#### Documentación
+- README: **índice corregido** (dos enlaces internos apuntaban a títulos que cambiaron en etapas anteriores: "API del catálogo — inicio de Fase 2" y "SEO cuando haya un dominio"; ahora coinciden con las secciones reales).
+- README: nueva sección **"Entrega de la Fase 1"** con tres partes pensadas para el dueño del negocio: qué incluye la tienda (tabla por pieza y estado), cómo se verificó (consola, responsive, auditoría de accesibilidad/SEO, pruebas del backend) y qué falta antes de vender de verdad (fotos, precios, textos legales, dominio, WhatsApp, publicación).
+- README: nueva **Opción C de publicación en Vercel** (además de Netlify Drop y GitHub Pages), incluyendo que el sitio no se compila y que se republica solo al subir cambios al repositorio.
+
+#### Verificado
+- Anclas del README: **0 rotas** (validadas con el algoritmo de GitHub, incluido el doble guion del título con raya) y todos los archivos enlazados existen.
+- Compatibilidad con apertura directa (`file://`): auditoría estática de 13 HTML y 23 JS → sin módulos ES, sin `import`, sin rutas absolutas a archivos locales, sin recursos faltantes y con `payments.apiBaseUrl` vacío (no intenta llamar a la API).
+- Honestidad sobre el alcance: el navegador integrado no admite `file://` y el modo headless de Edge no fue confiable en esta máquina, así que la verificación de apertura directa es estática (no visual).
+
 ## [1.17.0] — 2026-10-31
 
 ### Tienda — Etapa 10C: QA responsive, accesibilidad y performance
