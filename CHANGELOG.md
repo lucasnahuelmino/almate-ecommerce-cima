@@ -5,6 +5,27 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
 ---
 
+## [1.20.0] — 2026-10-31
+
+### Preparación de la prueba real de Mercado Pago en modo TEST
+
+Todo lo necesario para que el titular haga la prueba sandbox sin tocar el sitio publicado y sin riesgo de cobros reales.
+
+#### Verificador de configuración `npm run check:mp`
+- `server/services/mp-env-check.js`: función pura que evalúa token, secreto del webhook, `PUBLIC_API_URL`, `FRONTEND_URL`, `CORS_ORIGIN` y `ADMIN_PASSWORD`, y devuelve hallazgos `ok` / `info` / `error` con mensajes accionables.
+- `server/scripts/check-mp-env.js`: CLI que lee `server/.env` con dotenv. **No se conecta a internet y no imprime secretos**; sale con código 1 si algo impide la prueba.
+- `server/test/mp-env-check.test.js`: 8 pruebas (configuración válida, origen `null`, token real rechazado, URL local, URL sin HTTPS, CORS incompleto, contraseña corta y no filtración de secretos).
+- Corrección de orden: el host local se evalúa **antes** que el protocolo, para que `http://localhost:3000` muestre el mensaje correcto ("Mercado Pago no puede llegar") en lugar de un error de HTTPS genérico.
+- Suite del backend: **100/100** (92 previas + 8 nuevas).
+
+#### Guía paso a paso
+- `server/PRUEBA-MERCADOPAGO.md`: alcance de la prueba, credenciales TEST, usuarios de prueba, dos túneles HTTPS con `cloudflared` (API y tienda, para cumplir el requisito HTTPS de `back_urls`), `.env` de ejemplo, `npm run check:mp`, configuración del webhook, tarjetas y usuarios de prueba, verificación en tienda/API/panel/base, casos adicionales (rechazo, pendiente, webhook repetido, stock, precio manipulado), problemas frecuentes y limpieza final.
+- README: enlace a la guía y mención de `npm run check:mp` en la sección del backend.
+
+#### Honestidad sobre el alcance
+- No se ejecutó la prueba end-to-end contra Mercado Pago: requiere credenciales `TEST-` y acceso al panel del titular, que no están disponibles para el agente. Lo verificado acá es el código, el verificador y la suite automatizada.
+- Los cobros reales siguen bloqueados por diseño: el servidor solo acepta tokens `TEST-`.
+
 ## [1.19.0] — 2026-10-31
 
 ### Backend — auditoría de las etapas 12 a 15 (sin cambios de código)

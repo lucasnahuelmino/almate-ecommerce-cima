@@ -15,6 +15,7 @@ Tienda estática hecha con HTML, CSS y JavaScript. No requiere instalar programa
 - [Publicar la tienda](#publicar-la-tienda)
 - [Entrega de la Fase 1](#entrega-de-la-fase-1)
 - [API de catálogo y pagos — backend Fase 2](#api-de-catálogo-y-pagos--backend-fase-2)
+- [Probar Mercado Pago en modo TEST](server/PRUEBA-MERCADOPAGO.md)
 - [Límites importantes de esta versión](#límites-importantes-de-esta-versión)
 - [Antes de publicar: checklist](#antes-de-publicar-checklist)
 - [SEO: URL del sitio y metadatos](#seo-url-del-sitio-y-metadatos)
@@ -252,6 +253,8 @@ El backend está en `server/`, separado de la tienda estática. Requiere Node.js
 6. Publicá una versión de prueba del frontend con HTTPS. Para el webhook, `PUBLIC_API_URL` debe ser una URL HTTPS públicamente accesible del backend (por ejemplo, un entorno de prueba o túnel HTTPS); `localhost` no puede recibir avisos de Mercado Pago.
 7. Ejecutá `npm start` desde `server/`. Comprobá `/api/health` y `/api/products`; luego probá un pedido usando únicamente el sandbox de Mercado Pago y un usuario/medio de pago de prueba.
 8. Ejecutá `npm test` desde `server/` para correr las pruebas automatizadas. Estas usan un gateway simulado y no realizan cobros.
+
+Antes de arrancar la prueba, ejecutá `npm run check:mp` desde `server/`: revisa el token TEST, el secreto del webhook, las URLs del túnel, CORS y la contraseña del panel **sin conectarse a internet y sin mostrar los secretos**. Si falta algo, lo indica con `[error]` y termina con código 1. La guía paso a paso, con los dos túneles HTTPS, usuarios de prueba, tarjetas de prueba, verificación del webhook y limpieza final, está en **[server/PRUEBA-MERCADOPAGO.md](server/PRUEBA-MERCADOPAGO.md)**.
 
 El backend crea `server/data/orders.sqlite`. Las categorías se sincronizan desde `js/data/categories.js`; los productos de esos archivos se insertan solo si todavía no existen, para que no se pierdan los cambios CSV al reiniciar. Los pedidos, movimientos y reservas se mantienen en SQLite. La carpeta `server/data/` no se sube al repositorio.
 
