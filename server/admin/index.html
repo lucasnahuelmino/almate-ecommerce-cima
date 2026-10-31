@@ -43,8 +43,50 @@
             <h2 id="orders-title">Pedidos recientes</h2>
             <p>Los pagos se verifican en Mercado Pago. Desde aquí solo se actualiza el estado de preparación y entrega.</p>
           </div>
-          <button class="button button--secondary" type="button" data-refresh>Actualizar</button>
+          <div class="orders-toolbar__actions">
+            <a class="button button--secondary" href="/api/admin/orders.csv" data-orders-export download>Exportar CSV</a>
+            <button class="button button--secondary" type="button" data-refresh>Actualizar</button>
+          </div>
         </div>
+        <form class="orders-filters" data-orders-filters role="search" aria-label="Filtrar pedidos">
+          <div class="field field--search">
+            <label for="orders-search">Buscar</label>
+            <input id="orders-search" name="q" type="search" autocomplete="off"
+              placeholder="Pedido, cliente, email o teléfono" aria-describedby="orders-search-hint">
+            <p class="field-hint" id="orders-search-hint">No hace falta escribir acentos.</p>
+          </div>
+          <div class="field">
+            <label for="orders-status">Estado del pago</label>
+            <select id="orders-status" name="status">
+              <option value="">Todos</option>
+              <option value="pending">Pendiente</option>
+              <option value="paid">Pagado</option>
+              <option value="failed">Fallido</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="orders-fulfillment">Preparación</label>
+            <select id="orders-fulfillment" name="fulfillment">
+              <option value="">Todas</option>
+              <option value="awaiting_confirmation">Pendiente de preparación</option>
+              <option value="preparing">Preparando</option>
+              <option value="dispatched">Despachado</option>
+              <option value="delivered">Entregado</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="orders-from">Desde</label>
+            <input id="orders-from" name="from" type="date">
+          </div>
+          <div class="field">
+            <label for="orders-to">Hasta</label>
+            <input id="orders-to" name="to" type="date">
+          </div>
+          <div class="orders-filters__actions">
+            <button class="button button--secondary" type="button" data-orders-clear>Limpiar filtros</button>
+          </div>
+        </form>
+        <p class="orders-count" data-orders-count role="status" aria-live="polite" hidden></p>
         <p class="message" data-orders-message role="status" aria-live="polite" hidden></p>
         <div class="orders-list" data-orders-list aria-live="polite"></div>
         <button class="button button--secondary load-more" type="button" data-load-more hidden>Cargar más pedidos</button>

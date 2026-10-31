@@ -2,10 +2,12 @@ const express = require("express");
 const path = require("node:path");
 const {
   cancelWhatsappOrder,
+  countAdminOrders,
   listAdminOrders,
   updateOrderFulfillment,
   catalogImageUsage
 } = require("./db");
+const { buildOrdersCsv, parseOrderFilters } = require("./services/order-filters");
 const {
   exportCatalogCsv,
   importCatalogCsv,
@@ -140,7 +142,7 @@ const createAdminRouter = ({
     response.status(204).end();
   });
 
-  router.get("/orders", requireSession, (request, response) => {
+  router.get("/orders", requireSession, (request, response, next) => {
     const limit = Number(request.query.limit || 50);
     const offset = Number(request.query.offset || 0);
     if (!Number.isInteger(limit) || limit < 1 || limit > 100 ||
@@ -148,7 +150,38 @@ const createAdminRouter = ({
       response.status(400).json({ error: "La paginación del listado no es válida." });
       return;
     }
-    response.json({ orders: listAdminOrders(database, limit, offset) });
+    try {
+      const filters = parseOrderFilters(request.query);
+      response.json({
+        orders: listAdminOrders(database, limit, offset, filters),
+        // total permite mostrar "X de Y" y saber si hay más páginas.
+        total: countAdminOrders(database, filters)
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Exporta el CSV con los mismos filtros del listado. Se limita la cantidad
+  // para no generar archivos enormes; si se supera, se pide acotar las fechas.
+  router.get("/orders.csv", requireSession, (request, response, next) => {
+    const exportLimit = 5000;
+    try {
+      const filters = parseOrderFilters(request.query);
+      const total = countAdminOrders(database, filters);
+      if (total > exportLimit) {
+        response.status(400).json({
+          error: "Hay " + total + " pedidos con esos filtros. Acotá las fechas para exportar hasta " + exportLimit + "."
+        });
+        return;
+      }
+      const date = new Date().toISOString().slice(0, 10);
+      response.type("text/csv; charset=utf-8");
+      response.setHeader("Content-Disposition", 'attachment; filename="cima-pedidos-' + date + '.csv"');
+      response.send("\uFEFF" + buildOrdersCsv(listAdminOrders(database, exportLimit, 0, filters)));
+    } catch (error) {
+      next(error);
+    }
   });
 
   router.get("/catalog.csv", requireSession, (request, response) => {

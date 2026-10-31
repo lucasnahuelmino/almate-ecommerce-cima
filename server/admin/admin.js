@@ -21,6 +21,15 @@
   const csvMessage = document.querySelector("[data-csv-message]");
   const ordersList = document.querySelector("[data-orders-list]");
   const ordersMessage = document.querySelector("[data-orders-message]");
+  const ordersFilters = document.querySelector("[data-orders-filters]");
+  const ordersSearch = document.querySelector("#orders-search");
+  const ordersStatus = document.querySelector("#orders-status");
+  const ordersFulfillment = document.querySelector("#orders-fulfillment");
+  const ordersFrom = document.querySelector("#orders-from");
+  const ordersTo = document.querySelector("#orders-to");
+  const ordersClear = document.querySelector("[data-orders-clear]");
+  const ordersCount = document.querySelector("[data-orders-count]");
+  const ordersExport = document.querySelector("[data-orders-export]");
   const logoutButton = document.querySelector("[data-logout]");
   const refreshButton = document.querySelector("[data-refresh]");
   const loadMoreButton = document.querySelector("[data-load-more]");
@@ -38,6 +47,7 @@
   };
   let csrfToken = "";
   let offset = 0;
+  let searchTimer = null;
   let pendingCatalogCsv = "";
   let currentSection = "orders";
 
@@ -261,17 +271,73 @@
     return card;
   };
 
+  /* ---------- Filtros del listado de pedidos ---------- */
+
+  // Arma el query string con los filtros activos. Solo envía los que tienen valor.
+  const currentOrderFilters = () => {
+    const params = new URLSearchParams();
+    const values = {
+      q: ordersSearch.value.trim(),
+      status: ordersStatus.value,
+      fulfillment: ordersFulfillment.value,
+      from: ordersFrom.value,
+      to: ordersTo.value
+    };
+    Object.entries(values).forEach(([key, value]) => {
+      if (value) params.set(key, value);
+    });
+    return params;
+  };
+
+  const hasActiveOrderFilters = () => currentOrderFilters().toString() !== "";
+
+  // El botón de exportar usa exactamente los filtros que se ven en pantalla.
+  const syncOrdersExportLink = () => {
+    const query = currentOrderFilters().toString();
+    ordersExport.href = "/api/admin/orders.csv" + (query ? "?" + query : "");
+  };
+
   const loadOrders = async (append) => {
     ordersMessage.hidden = true;
     if (!append) {
       offset = 0;
       ordersList.replaceChildren();
     }
-    const result = await request(`/api/admin/orders?limit=${pageSize}&offset=${offset}`);
+    const params = currentOrderFilters();
+    params.set("limit", pageSize);
+    params.set("offset", offset);
+    syncOrdersExportLink();
+    const result = await request("/api/admin/orders?" + params.toString());
     result.orders.forEach((order) => ordersList.appendChild(createOrderCard(order)));
     offset += result.orders.length;
-    loadMoreButton.hidden = result.orders.length < pageSize;
-    if (!offset) addText(ordersList, "p", "Todavía no hay pedidos registrados.");
+    const total = Number.isInteger(result.total) ? result.total : offset;
+    loadMoreButton.hidden = offset >= total;
+    if (total === 0 && !hasActiveOrderFilters()) {
+      // Sin filtros y sin pedidos, el mensaje del listado alcanza.
+      ordersCount.hidden = true;
+    } else {
+      ordersCount.hidden = false;
+      ordersCount.textContent = total === 0
+        ? "Sin resultados con estos filtros."
+        : "Mostrando " + offset + " de " + total + (total === 1 ? " pedido." : " pedidos.");
+    }
+    if (!offset) {
+      addText(
+        ordersList,
+        "p",
+        hasActiveOrderFilters()
+          ? "No hay pedidos que coincidan con los filtros."
+          : "Todavía no hay pedidos registrados."
+      );
+    }
+  };
+
+  // Vuelve a pedir la primera página con los filtros actuales.
+  const refreshOrders = () => {
+    loadOrders(false).catch((error) => {
+      ordersMessage.textContent = error.message;
+      ordersMessage.hidden = false;
+    });
   };
 
   const resumeSession = async () => {
@@ -319,18 +385,79 @@
     }
   });
 
-  refreshButton.addEventListener("click", () => {
-    loadOrders(false).catch((error) => {
-      ordersMessage.textContent = error.message;
-      ordersMessage.hidden = false;
-    });
-  });
+  refreshButton.addEventListener("click", refreshOrders);
 
   loadMoreButton.addEventListener("click", () => {
     loadOrders(true).catch((error) => {
       ordersMessage.textContent = error.message;
       ordersMessage.hidden = false;
     });
+  });
+
+  // Submit del formulario: Enter en el buscador o cambio de fecha aplicado con Enter.
+  ordersFilters.addEventListener("submit", (event) => {
+    event.preventDefault();
+    clearTimeout(searchTimer);
+    refreshOrders();
+  });
+
+  // La búsqueda espera 300 ms para no consultar en cada tecla.
+  ordersSearch.addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(refreshOrders, 300);
+  });
+
+  [ordersStatus, ordersFulfillment, ordersFrom, ordersTo].forEach((field) => {
+    field.addEventListener("change", refreshOrders);
+  });
+
+  ordersClear.addEventListener("click", () => {
+    clearTimeout(searchTimer);
+    ordersFilters.reset();
+    refreshOrders();
+    ordersSearch.focus();
+  });
+
+  // Descarga el CSV sin salir del panel: si el servidor devuelve un error
+  // (sesión vencida, demasiados pedidos), se muestra el mensaje en pantalla.
+  let exportingOrders = false;
+  ordersExport.addEventListener("click", async (event) => {
+    event.preventDefault();
+    if (exportingOrders) return;
+    exportingOrders = true;
+    ordersMessage.hidden = true;
+    try {
+      const response = await fetch(ordersExport.href, {
+        credentials: "same-origin",
+        cache: "no-store"
+      });
+      if (!response.ok) {
+        let message = "No se pudo exportar el CSV.";
+        try {
+          const body = await response.json();
+          if (body && body.error) message = body.error;
+        } catch {
+          // La respuesta no era JSON: se usa el mensaje genérico.
+        }
+        throw new Error(message);
+      }
+      const disposition = response.headers.get("content-disposition") || "";
+      const nameMatch = /filename="?([^";]+)"?/.exec(disposition);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = nameMatch ? nameMatch[1] : "cima-pedidos.csv";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      ordersMessage.textContent = error.message;
+      ordersMessage.hidden = false;
+    } finally {
+      exportingOrders = false;
+    }
   });
 
   csvForm.addEventListener("submit", async (event) => {

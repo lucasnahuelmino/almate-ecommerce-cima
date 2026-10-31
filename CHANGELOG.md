@@ -5,6 +5,35 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
 ---
 
+## [1.21.0] — 2026-10-31
+
+### Panel — filtros y exportación CSV de pedidos
+
+#### Filtros combinables
+- Búsqueda por número de pedido, cliente, email o teléfono, **sin distinguir mayúsculas ni acentos** ("perez" encuentra "Pérez").
+- Filtros por estado del pago, estado de preparación y rango de fechas (inclusivo, en hora argentina).
+- Contador "Mostrando X de Y", paginación de a 50 y botón **Limpiar filtros**.
+- Búsqueda con espera de 300 ms para no consultar en cada tecla; el resto de los filtros se aplica al cambiar.
+
+#### Exportación CSV
+- Nuevo endpoint `GET /api/admin/orders.csv`, protegido por la misma sesión que el panel y con los filtros del listado.
+- Columnas: pedido, fecha, estado del pago, preparación, cliente, email, teléfono, entrega, dirección, ciudad, provincia, código postal, notas, ítems y total.
+- **Sin DNI**, igual que la vista del panel.
+- BOM UTF-8 para que Excel y Google Sheets muestren bien los acentos; fechas en hora argentina y total numérico.
+- Protección contra fórmulas: los textos que empiezan con `=`, `+`, `-` o `@` se neutralizan con un apóstrofo.
+- Límite de 5000 filas por archivo; si se supera, se pide acotar las fechas.
+
+#### Implementación
+- `server/services/order-filters.js`: normalización de texto, validación de filtros, rango de fechas y generación del CSV, todo en funciones puras.
+- `server/db.js`: función SQL `normalize_text` (sin acentos ni mayúsculas), condiciones compartidas por listado y conteo, `countAdminOrders` y `total` en la respuesta de `GET /api/admin/orders`.
+- `server/admin/index.html`, `admin.js` y `admin.css`: barra de filtros accesible, contador, botón de exportación y estilos responsivos.
+
+#### Pruebas
+- `server/test/order-filters.test.js`: 9 pruebas (normalización, comodines de LIKE, validación, límites de fecha, formato y protección del CSV).
+- `server/test/api.test.js`: prueba de integración de filtros, búsqueda sin acentos, rechazo de filtros inválidos, CSV con sesión obligatoria y ausencia de DNI.
+- Suite completa: **110/110**.
+- Verificación en navegador: filtros y contador funcionando con pedidos reales, CSV descargado con BOM y acentos correctos, consola sin errores, Lighthouse **accesibilidad 100** y **buenas prácticas 100** (SEO 75 es esperado en un panel privado sin metadatos).
+
 ## [1.20.0] — 2026-10-31
 
 ### Preparación de la prueba real de Mercado Pago en modo TEST

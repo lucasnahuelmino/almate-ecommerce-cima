@@ -146,6 +146,42 @@ input:focus-visible {
   margin-bottom: 0;
 }
 
+.orders-toolbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.orders-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: #fff;
+}
+
+.orders-filters .field--search {
+  grid-column: 1 / -1;
+}
+
+.orders-filters__actions {
+  display: flex;
+  align-items: flex-end;
+}
+
+.orders-filters__actions .button {
+  width: 100%;
+}
+
+.orders-count {
+  margin: 0.75rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 .orders-list {
   display: grid;
   gap: 1rem;

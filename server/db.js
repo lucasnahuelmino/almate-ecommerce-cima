@@ -5,6 +5,7 @@ const {
   validateProductLists,
   validateProductTexts
 } = require("./services/product-rules");
+const { normalizeText, toLikePattern } = require("./services/order-filters");
 
 const schema = `
   CREATE TABLE IF NOT EXISTS categories (
@@ -133,6 +134,8 @@ const openDatabase = (databasePath) => {
   const database = new Database(databasePath);
   database.pragma("foreign_keys = ON");
   database.pragma("journal_mode = WAL");
+  // Búsqueda del panel sin acentos ni mayúsculas: se usa desde el filtro SQL.
+  database.function("normalize_text", { deterministic: true }, (value) => normalizeText(value));
   database.exec(schema);
   return database;
 };
@@ -396,16 +399,7 @@ const fulfillmentTransitions = {
   delivered: []
 };
 
-const listAdminOrders = (database, limit = 50, offset = 0) => database.prepare(
-  `SELECT o.order_id, o.status AS payment_status, o.total, o.data,
-      o.created_at, o.updated_at,
-      COALESCE(f.status, 'awaiting_confirmation') AS fulfillment_status,
-      COALESCE(f.updated_at, o.created_at) AS fulfillment_updated_at
-   FROM orders o
-   LEFT JOIN order_fulfillment f ON f.order_id = o.order_id
-   ORDER BY o.created_at DESC, o.order_id DESC
-   LIMIT ? OFFSET ?`
-).all(limit, offset).map((row) => {
+const mapAdminOrderRow = (row) => {
   const data = JSON.parse(row.data);
   return {
     orderId: row.order_id,
@@ -438,7 +432,66 @@ const listAdminOrders = (database, limit = 50, offset = 0) => database.prepare(
       notes: data.shipping.notes
     }
   };
-});
+};
+
+// Condiciones compartidas por el listado y el conteo del panel.
+// Solo se agregan cláusulas con valores ya validados por parseOrderFilters.
+const adminOrderConditions = (filters = {}) => {
+  const clauses = [];
+  const params = [];
+  if (filters.status) {
+    clauses.push("o.status = ?");
+    params.push(filters.status);
+  }
+  if (filters.fulfillment) {
+    clauses.push("COALESCE(f.status, 'awaiting_confirmation') = ?");
+    params.push(filters.fulfillment);
+  }
+  if (filters.fromIso) {
+    clauses.push("o.created_at >= ?");
+    params.push(filters.fromIso);
+  }
+  if (filters.toIso) {
+    clauses.push("o.created_at < ?");
+    params.push(filters.toIso);
+  }
+  if (filters.q) {
+    // Busca en pedido, nombre, email y teléfono. normalize_text quita acentos
+    // y mayúsculas, y ESCAPE evita que % o _ se interpreten como comodines.
+    const pattern = toLikePattern(filters.q);
+    clauses.push(`(normalize_text(o.order_id) LIKE ? ESCAPE '\\'
+      OR normalize_text(json_extract(o.data, '$.customer.name')) LIKE ? ESCAPE '\\'
+      OR normalize_text(json_extract(o.data, '$.customer.email')) LIKE ? ESCAPE '\\'
+      OR normalize_text(json_extract(o.data, '$.customer.phone')) LIKE ? ESCAPE '\\')`);
+    params.push(pattern, pattern, pattern, pattern);
+  }
+  return { where: clauses.length ? " WHERE " + clauses.join(" AND ") : "", params };
+};
+
+const adminOrderSelect = `SELECT o.order_id, o.status AS payment_status, o.total, o.data,
+    o.created_at, o.updated_at,
+    COALESCE(f.status, 'awaiting_confirmation') AS fulfillment_status,
+    COALESCE(f.updated_at, o.created_at) AS fulfillment_updated_at
+  FROM orders o
+  LEFT JOIN order_fulfillment f ON f.order_id = o.order_id`;
+
+const listAdminOrders = (database, limit = 50, offset = 0, filters = {}) => {
+  const { where, params } = adminOrderConditions(filters);
+  return database.prepare(
+    `${adminOrderSelect}${where}
+     ORDER BY o.created_at DESC, o.order_id DESC
+     LIMIT ? OFFSET ?`
+  ).all(...params, limit, offset).map(mapAdminOrderRow);
+};
+
+const countAdminOrders = (database, filters = {}) => {
+  const { where, params } = adminOrderConditions(filters);
+  return database.prepare(
+    `SELECT COUNT(*) AS count
+       FROM orders o
+       LEFT JOIN order_fulfillment f ON f.order_id = o.order_id${where}`
+  ).get(...params).count;
+};
 
 const updateOrderFulfillment = (database, orderId, nextStatus, now = new Date().toISOString()) => {
   if (!Object.hasOwn(fulfillmentTransitions, nextStatus)) {
@@ -862,6 +915,7 @@ module.exports = {
   applyPayment,
   getPublicOrder,
   listAdminOrders,
+  countAdminOrders,
   updateOrderFulfillment,
   cancelWhatsappOrder,
   listCatalogProductsForAdmin,

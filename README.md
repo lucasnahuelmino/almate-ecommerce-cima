@@ -117,11 +117,24 @@ El panel vive en el backend (`/server`) y se abre en `https://<api-host>/admin` 
 
 | Sección | Para qué sirve |
 | --- | --- |
-| **Pedidos recientes** | Ver los pedidos registrados en el backend, su estado y liberar la reserva de stock de una solicitud por WhatsApp cancelada. |
+| **Pedidos recientes** | Ver los pedidos registrados en el backend, filtrarlos por texto, estado del pago, preparación y fechas, exportar a CSV lo filtrado y liberar la reserva de stock de una solicitud por WhatsApp cancelada. |
 | **Productos** | Crear, editar, duplicar y archivar productos sin tocar archivos. Incluye precio, oferta, stock, categoría, descripciones, variantes, etiquetas y destacado. |
 | **Historial** | Ver cada cambio administrativo y **revertirlo** si algo salió mal (por ejemplo, una importación equivocada). |
 | **Importación masiva** | Subir un CSV o Excel con previsualización: primero muestra qué cambiaría y recién después aplica los cambios en una transacción. |
 | **Auditoría** | Registro con hora, acción, estado anterior y estado nuevo de cada operación. No guarda datos personales del cliente. |
+
+### Filtrar y exportar pedidos
+
+La sección **Pedidos** tiene una barra de filtros que se combina entre sí:
+
+- **Buscar**: encuentra por número de pedido, nombre, email o teléfono. No distingue mayúsculas y no hace falta escribir acentos ("perez" encuentra "Pérez").
+- **Estado del pago**: pendiente, pagado o fallido.
+- **Preparación**: pendiente de preparación, preparando, despachado o entregado.
+- **Desde / Hasta**: rango de fechas inclusivo, en hora argentina.
+
+El contador muestra cuántos pedidos se ven sobre el total filtrado y el botón **Cargar más** sigue paginando de a 50. **Limpiar filtros** vuelve al listado completo.
+
+**Exportar CSV** descarga exactamente los pedidos que están filtrados (hasta 5000; si hay más, el panel pide acotar las fechas). El archivo se abre en Excel o Google Sheets con acentos correctos y estas columnas: pedido, fecha, estado del pago, preparación, cliente, email, teléfono, entrega, dirección, ciudad, provincia, código postal, notas, ítems y total. Por privacidad **no incluye DNI**, igual que la vista del panel. Los textos que empiezan con `=`, `+`, `-` o `@` se neutralizan para que una planilla no los ejecute como fórmula.
 
 ### Lo que el panel no hace
 

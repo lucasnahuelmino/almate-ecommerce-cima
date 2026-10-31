@@ -534,6 +534,78 @@ test("admin dashboard requires authentication, lists minimal order data and audi
   assert.equal(expired.status, 401);
 });
 
+test("admin orders support filters, accent-insensitive search and CSV export", async () => {
+  const session = await loginAdmin();
+
+  const paidOrder = await (await postJson("/api/checkout", checkoutPayload({
+    customer: {
+      name: "Ana Gómez",
+      email: "ana@example.com",
+      phone: "5491123456789",
+      dni: "30123456"
+    }
+  }))).json();
+  const payment = {
+    id: "555030",
+    external_reference: paidOrder.orderId,
+    status: "approved",
+    transaction_amount: paidOrder.totals.total,
+    currency_id: "ARS"
+  };
+  payments.set(payment.id, payment);
+  assert.equal((await postWebhook(payment.id)).status, 200);
+
+  const pendingOrder = await (await postJson("/api/checkout", checkoutPayload({
+    customer: {
+      name: "Julián Pérez",
+      email: "julian@example.com",
+      phone: "5491198765432",
+      dni: "31234567"
+    }
+  }))).json();
+
+  // Filtro por estado del pago.
+  const paidResponse = await adminRequest("/api/admin/orders?status=paid", { session });
+  const paidBody = await paidResponse.json();
+  assert.equal(paidResponse.status, 200);
+  assert.ok(paidBody.total >= 1);
+  assert.ok(paidBody.orders.every((entry) => entry.paymentStatus === "paid"));
+  assert.ok(paidBody.orders.some((entry) => entry.orderId === paidOrder.orderId));
+  assert.equal(paidBody.orders.some((entry) => entry.orderId === pendingOrder.orderId), false);
+
+  // Búsqueda sin acentos ni mayúsculas en nombre y email.
+  const searchResponse = await adminRequest("/api/admin/orders?q=JULIAN%20perez", { session });
+  const searchBody = await searchResponse.json();
+  assert.ok(searchBody.orders.some((entry) => entry.orderId === pendingOrder.orderId));
+  assert.equal(searchBody.orders.some((entry) => entry.orderId === paidOrder.orderId), false);
+
+  // Búsqueda por los primeros caracteres del número de pedido.
+  const byIdResponse = await adminRequest("/api/admin/orders?q=" + paidOrder.orderId.slice(0, 8), { session });
+  const byIdBody = await byIdResponse.json();
+  assert.ok(byIdBody.orders.some((entry) => entry.orderId === paidOrder.orderId));
+
+  // Un rango de fechas futuro no devuelve pedidos.
+  const futureResponse = await adminRequest("/api/admin/orders?from=2099-01-01", { session });
+  assert.equal((await futureResponse.json()).total, 0);
+
+  // Filtros inválidos se rechazan con 400 en lugar de ignorarse.
+  assert.equal((await adminRequest("/api/admin/orders?status=cobrado", { session })).status, 400);
+  assert.equal((await adminRequest("/api/admin/orders?from=31/10/2026", { session })).status, 400);
+  assert.equal((await adminRequest("/api/admin/orders?from=2026-10-31&to=2026-10-01", { session })).status, 400);
+
+  // El CSV exige sesión y respeta los filtros.
+  assert.equal((await fetch(`${baseUrl}/api/admin/orders.csv`)).status, 401);
+  const csvResponse = await adminRequest("/api/admin/orders.csv?status=paid", { session });
+  assert.equal(csvResponse.status, 200);
+  assert.match(csvResponse.headers.get("content-type"), /text\/csv/);
+  const csv = await csvResponse.text();
+  assert.match(csv, /Pedido,Fecha,Estado del pago,Preparación,Cliente,Email,Teléfono/);
+  assert.ok(csv.includes(paidOrder.orderId));
+  assert.equal(csv.includes(pendingOrder.orderId), false);
+  assert.equal(csv.includes("30123456"), false);
+  assert.match(csv, /Pagado/);
+});
+
 test("admin dashboard routes return 404 when password protection is not configured", async () => {
   const disabledServer = createApp({ database })
     .listen(0, "127.0.0.1");
