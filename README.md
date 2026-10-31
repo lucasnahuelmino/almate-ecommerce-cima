@@ -7,6 +7,7 @@ Tienda estática hecha con HTML, CSS y JavaScript. No requiere instalar programa
 - [Abrir y probar la tienda](#abrir-y-probar-la-tienda)
 - [Archivos y carpetas principales](#archivos-y-carpetas-principales)
 - [Editar productos](#editar-productos)
+- [Panel de administración](#panel-de-administración)
 - [Administrar catálogo con CSV](#administrar-catálogo-con-csv)
 - [Cambiar fotos](#cambiar-fotos)
 - [Editar categorías](#editar-categorías)
@@ -99,6 +100,36 @@ El bloque debe llevar coma si hay otro producto después. En JavaScript, textos 
 **Para una oferta:** `comparePrice` debe ser mayor que `price`; la etiqueta `"oferta"` también puede incluir el producto en ofertas. Revisá que el precio anterior sea real. **Para agotarlo temporalmente:** cambiá `stock` a `0`. **Para ocultarlo:** cambiá `active` a `false`.
 
 Las variantes mostradas en la ficha son opciones del producto; el inventario se gestiona en el campo general `stock`, no por variante.
+
+## Panel de administración
+
+El panel vive en el backend (`/server`) y se abre en `https://<api-host>/admin` con la contraseña configurada en `ADMIN_PASSWORD` (mínimo 16 caracteres). Sin esa variable la ruta devuelve 404, como si no existiera.
+
+### Ingreso y sesión
+
+- Se inicia sesión con la contraseña; la sesión dura **1 hora** y se puede cerrar desde el mismo panel.
+- Después de 5 intentos fallidos desde la misma dirección, el ingreso se bloquea 15 minutos.
+- La cookie de sesión es privada del servidor (`HttpOnly`), no se puede leer desde JavaScript y viaja solo por HTTPS en producción.
+- El panel exige que los cambios vengan del propio panel (protección CSRF) y aplica una política de seguridad de contenido estricta.
+
+### Secciones
+
+| Sección | Para qué sirve |
+| --- | --- |
+| **Pedidos recientes** | Ver los pedidos registrados en el backend, su estado y liberar la reserva de stock de una solicitud por WhatsApp cancelada. |
+| **Productos** | Crear, editar, duplicar y archivar productos sin tocar archivos. Incluye precio, oferta, stock, categoría, descripciones, variantes, etiquetas y destacado. |
+| **Historial** | Ver cada cambio administrativo y **revertirlo** si algo salió mal (por ejemplo, una importación equivocada). |
+| **Importación masiva** | Subir un CSV o Excel con previsualización: primero muestra qué cambiaría y recién después aplica los cambios en una transacción. |
+| **Auditoría** | Registro con hora, acción, estado anterior y estado nuevo de cada operación. No guarda datos personales del cliente. |
+
+### Lo que el panel no hace
+
+- **No cobra ni reembolsa**: el cobro depende de Mercado Pago (modo prueba) o de la coordinación por WhatsApp.
+- **No cambia el estado de pago**: ese estado lo define Mercado Pago mediante sus notificaciones firmadas. El panel solo gestiona el estado operativo (por ejemplo, "entregado") con registro de auditoría.
+- **No muestra el DNI**: la vista de pedidos oculta el DNI y los datos que no hacen falta para preparar el envío.
+- **No reemplaza la copia de seguridad**: antes de cada importación o cambio masivo el backend guarda una copia verificable de la base (ver `BACKUP_DIR`).
+
+Las fotos que se suben desde el panel se guardan en `UPLOAD_DIR` y se sirven desde `/media`. En un hosting, esa carpeta también debe estar dentro del disco persistente (ver [despliegue](#preparación-de-despliegue-del-backend-render-u-otro-host)).
 
 ## Administrar catálogo con CSV
 
@@ -238,7 +269,7 @@ En Render, por ejemplo:
 
 1. Creá un servicio web desde la carpeta `server/`, con `npm install` como comando de instalación y `npm start` como inicio. Usá una versión de Node compatible (20 o posterior).
 2. Asociá un disco persistente montado en `/var/data` y definí `DB_PATH=/var/data/orders.sqlite`. Sin almacenamiento persistente, pedidos y reservas podrían perderse al reiniciar o desplegar.
-3. Configurá como variables privadas `NODE_ENV=production`, `TRUST_PROXY_HOPS=1` (si el host usa un único proxy de confianza), `FRONTEND_URL` (origen HTTPS exacto del sitio), `PUBLIC_API_URL` (URL HTTPS pública de la API), `CORS_ORIGIN` (origen del sitio, sin rutas), y, para activar Mercado Pago TEST, `MP_ACCESS_TOKEN` y `MP_WEBHOOK_SECRET` de la misma aplicación de pruebas.
+3. Configurá como variables privadas `NODE_ENV=production`, `TRUST_PROXY_HOPS=1` (si el host usa un único proxy de confianza), `FRONTEND_URL` (origen HTTPS exacto del sitio), `PUBLIC_API_URL` (URL HTTPS pública de la API), `CORS_ORIGIN` (origen del sitio, sin rutas), y, para activar Mercado Pago TEST, `MP_ACCESS_TOKEN` y `MP_WEBHOOK_SECRET` de la misma aplicación de pruebas. Si vas a subir fotos desde el panel, agregá también `UPLOAD_DIR=/var/data/uploads` y `BACKUP_DIR=/var/data/backups`: así las imágenes y los respaldos quedan junto a la base, dentro del disco persistente, y no se pierden al reiniciar.
 4. En el panel de desarrolladores de Mercado Pago, configurá la URL de Webhooks de prueba como `PUBLIC_API_URL` + `/api/webhooks/mercadopago`, habilitá eventos de pago, y guardá el secreto generado como `MP_WEBHOOK_SECRET`. El backend debe ser públicamente accesible por HTTPS para recibir avisos.
 5. Para habilitar el panel privado de pedidos, configurá `ADMIN_PASSWORD` como variable secreta del hosting; usá una contraseña aleatoria larga (al menos 16 caracteres) y guardala también en un gestor de contraseñas. Sin esa variable, `/admin` y sus rutas API devuelven `404`. En Render, configurá `TRUST_PROXY_HOPS=1` para que el backend identifique correctamente el proxy HTTPS y limite los intentos fallidos por IP. La sesión del panel dura una hora; cerrar sesión la invalida.
 6. Abrí `https://<api-host>/admin` para iniciar sesión. El panel lista pedidos almacenados en el backend, muestra contacto/dirección (no DNI), permite cambios auditados en el estado operativo de pagos aprobados y cancelar solicitudes WhatsApp para liberar stock. No altera pagos ni emite reembolsos.
@@ -246,6 +277,16 @@ En Render, por ejemplo:
 8. Confirmá `/api/health`, el catálogo y un flujo sandbox completo: pago aprobado, rechazado/pendiente, retorno a gracias, consulta de estado y reintento del mismo webhook. No uses cuentas ni medios de pago reales.
 
 El archivo SQLite local está pensado para una sola instancia del backend con disco persistente. No habilites réplicas múltiples ni despliegues simultáneos que compartan ese archivo; para escalar, primero se debe migrar a una base de datos administrada compatible. El registro de auditoría del panel guarda cada cambio operativo con hora y estado anterior/nuevo, sin copiar datos del cliente.
+
+En **Railway, Fly.io, un VPS o cualquier otro host** los requisitos son los mismos, aunque cambien los nombres de los menús:
+
+1. HTTPS público para la API y para el sitio.
+2. Un volumen o disco persistente montado donde vivan `DB_PATH`, `UPLOAD_DIR` y `BACKUP_DIR` (los tres con ruta absoluta).
+3. Las variables de entorno privadas del punto anterior, con `CORS_ORIGIN` igual al origen exacto del sitio publicado.
+4. El comando de inicio `npm start` dentro de `server/` y Node 20 o posterior.
+5. El webhook de Mercado Pago apuntando a `PUBLIC_API_URL` + `/api/webhooks/mercadopago`.
+
+En un VPS hay que agregar delante un proxy HTTPS (por ejemplo Nginx o Caddy) y ajustar `TRUST_PROXY_HOPS` a la cantidad de proxies de confianza para que el panel registre bien las direcciones y limite los intentos de ingreso.
 
 Esta guía prepara un despliegue de prueba con configuración reforzada, no autoriza ni habilita producción de pagos. La clave privada y el código solo admiten modo TEST y la URL sandbox. La prueba de extremo a extremo con Mercado Pago requiere credenciales/usuario de prueba y un dominio del titular, que aún no están configurados; no se debe anunciar como completada hasta realizarla.
 

@@ -5,6 +5,30 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
 ---
 
+## [1.19.0] — 2026-10-31
+
+### Backend — auditoría de las etapas 12 a 15 (sin cambios de código)
+
+Auditoría del backend contra AGENTS.md. El código ya cumplía lo pedido: **no se modificó ninguna lógica ni endpoint**. Lo que faltaba era documentación para el dueño.
+
+#### Verificado (con evidencia en el código)
+
+| Etapa | Requisito | Estado |
+| --- | --- | --- |
+| 12 | Express + SQLite, `GET /api/health`, catálogo del lado servidor | Cumple: `server/app.js`, `server/db.js`, `server/services/catalog.js` (recalcula precios, envío y stock; nunca confía en el navegador) |
+| 13 | `POST /api/checkout` con preferencia de Checkout Pro | Cumple: `items` con `currency_id: "ARS"`, `payer`, `external_reference`, `back_urls` a `gracias.html`, `auto_return`, `notification_url`, `statement_descriptor`, expiración de 30 min y solo `sandbox_init_point` |
+| 13 | Webhook firmado e idempotente | Cumple: `WebhookSignatureValidator` del SDK con `x-signature`, `x-request-id` y `data.id` del query; consulta el pago en la API; `payment_events` + guardas de `paid` dentro de una transacción |
+| 13 | Frontend que solo manda `productId`/`qty`/variantes/datos | Cumple: `js/payments/mercadopago.js` |
+| 14 | Validación de configuración de producción | Cumple: `server/runtime-config.js` exige HTTPS, CORS exacto, `DB_PATH` absoluto, credenciales `TEST-` y secreto de webhook; rechaza tokens reales |
+| 14 | Suite de pruebas | Cumple: 92/92 con `node --test` (incluye firma de webhook, idempotencia, CORS, panel y validaciones de entorno) |
+| 15 | Panel privado seguro | Cumple: contraseña `scrypt` + comparación en tiempo constante, cookie `HttpOnly` `SameSite=Strict` (y `Secure` en producción), CSRF por token + mismo origen, bloqueo tras 5 intentos, CSP estricta, `X-Frame-Options: DENY` |
+| 15 | Datos mínimos y sin reembolsos | Cumple: `GET /api/orders/:id` devuelve solo estado, totales e ítems; el panel no expone DNI (cubierto por test) y solo cambia estado operativo (con auditoría) o libera reservas |
+
+#### Documentación corregida
+- README: nueva sección **"Panel de administración"** con ingreso, duración de sesión, bloqueo de intentos, secciones (pedidos, productos, historial, importación masiva, auditoría), qué **no** hace (no cobra, no reembolsa, no cambia el estado de pago, no muestra DNI) y dónde se guardan las fotos subidas.
+- README: el despliegue ahora indica que `UPLOAD_DIR` y `BACKUP_DIR` deben estar **dentro del disco persistente** (en Render: `/var/data/uploads` y `/var/data/backups`), porque antes el dueño podía perder fotos y respaldos al reiniciar.
+- README: párrafo para **Railway, Fly.io, VPS u otro host** con los cinco requisitos comunes (HTTPS, volumen persistente con rutas absolutas, variables privadas, `npm start` con Node 20+, webhook apuntando a la API).
+
 ## [1.18.0] — 2026-10-31
 
 ### Tienda — Etapa 11: documentación y entrega de la Fase 1
