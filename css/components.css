@@ -104,6 +104,13 @@
   border-radius: var(--radius-sm);
 }
 
+/* En pantallas táctiles el botón chico crece al área táctil mínima (Etapa 10C) */
+@media (max-width: 768px) {
+  .btn--sm {
+    min-height: var(--tap-min);
+  }
+}
+
 .btn--lg {
   min-height: 52px;
   padding: 0 var(--space-6);
@@ -152,7 +159,7 @@
 
 .badge--new {
   background-color: var(--color-sage-soft);
-  color: var(--color-success);
+  color: var(--color-success-strong);
 }
 
 .badge--offer {

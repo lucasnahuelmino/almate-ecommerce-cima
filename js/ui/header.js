@@ -35,6 +35,16 @@
   /* ---------- Menú mobile ---------- */
   const menuToggle = $("[data-menu-toggle]");
   const menuSheet = $("#menu-sheet");
+  const header = $("#site-header");
+
+  /* La hoja es `position: fixed` al viewport, pero la barra de avisos puede
+     empujar el header hacia abajo (Etapas previas). Anclamos el tope de la
+     hoja al borde real del header para que nunca lo tape (Etapa 10C). */
+  const syncSheetTop = () => {
+    if (!menuSheet) return;
+    const bottom = header ? header.getBoundingClientRect().bottom : 0;
+    menuSheet.style.top = Math.max(0, Math.round(bottom)) + "px";
+  };
 
   const setMenu = (open) => {
     if (!menuToggle || !menuSheet) return;
@@ -50,13 +60,21 @@
     // Bloquea el scroll del fondo mientras el menú está abierto
     document.body.style.overflow = open ? "hidden" : "";
     if (open) {
+      syncSheetTop();
       window.setTimeout(() => {
         if (menuSheet.classList.contains("is-open")) {
           menuSheet.querySelector("a")?.focus();
         }
       }, 0);
+    } else {
+      menuSheet.style.top = "";
     }
   };
+
+  // Si cambia el tamaño de la ventana con el menú abierto, re-anclamos
+  window.addEventListener("resize", () => {
+    if (menuSheet && menuSheet.classList.contains("is-open")) syncSheetTop();
+  });
 
   if (menuToggle && menuSheet) {
     menuToggle.addEventListener("click", () => {
@@ -102,7 +120,6 @@
   });
 
   /* ---------- Header compacto al hacer scroll ---------- */
-  const header = $("#site-header");
   if (header) {
     let lastState = false;
     window.addEventListener(

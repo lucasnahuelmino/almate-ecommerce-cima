@@ -36,14 +36,12 @@
     categories.forEach((category, index) => {
       const card = createElement("a", "category-card category-card--" + (index + 1));
       card.href = "tienda.html?category=" + encodeURIComponent(category.slug);
-      card.setAttribute("aria-label", "Ver productos de " + category.name);
       const image = createElement("img", "category-card__image");
       image.src = category.image;
       image.alt = "";
       image.loading = "lazy";
 
       const content = createElement("div", "category-card__content");
-      content.setAttribute("aria-hidden", "true");
       content.append(
         createElement("span", "category-card__number", "0" + (index + 1)),
         createElement("h3", "", category.name),

@@ -247,7 +247,7 @@
 .home-product-card__action {
   position: relative;
   z-index: 1;
-  min-height: 40px;
+  min-height: var(--tap-min); /* 44px: área táctil mínima */
   padding-inline: var(--space-2);
   font-size: var(--fs-xs);
   white-space: normal;
@@ -431,7 +431,20 @@
 }
 
 .home-last-call .eyebrow {
-  color: var(--color-accent);
+  /* El panel invierte los colores según el tema, así que el acento necesita
+     un tono propio para mantener contraste AA (Etapa 10C):
+     claro sobre panel oscuro = 5.4:1 · oscuro sobre panel claro = 4.9:1 */
+  color: #e0725b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .home-last-call .eyebrow {
+    color: #b0442d;
+  }
+}
+
+:root[data-theme="dark"] .home-last-call .eyebrow {
+  color: #b0442d;
 }
 
 .home-last-call__inner {
@@ -823,7 +836,7 @@
 }
 
 .cart-line__quantity .field__input {
-  min-height: 40px;
+  min-height: var(--tap-min); /* 44px: área táctil mínima */
 }
 
 .cart-line__price {

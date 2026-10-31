@@ -14,21 +14,34 @@
   position: sticky;
   top: 0;
   z-index: var(--z-header);
-  /* Glassmorphism sutil: fondo translúcido + desenfoque */
-  background-color: rgb(250 247 242 / 88%);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
+  /* El fondo vidrio vive en el ::before, no acá: un backdrop-filter en el
+     header lo convertiría en bloque de contenedor y atraparía a la hoja del
+     menú móvil (position: fixed), que colapsaba dentro del header (Etapa 10C) */
+  background-color: transparent;
   border-bottom: 1px solid var(--color-border);
   transition: box-shadow var(--transition-base);
 }
 
+/* Glassmorphism sutil: fondo translúcido + desenfoque, sin afectar a los
+   elementos fixed hijos del header */
+.site-header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: rgb(250 247 242 / 88%);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
 /* Modo oscuro: el fondo translúcido se adapta */
-:root[data-theme="dark"] .site-header {
+:root[data-theme="dark"] .site-header::before {
   background-color: rgb(25 21 16 / 88%);
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .site-header {
+  :root:not([data-theme="light"]) .site-header::before {
     background-color: rgb(25 21 16 / 88%);
   }
 }

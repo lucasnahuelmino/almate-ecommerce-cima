@@ -5,6 +5,25 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
 ---
 
+## [1.17.0] — 2026-10-31
+
+### Tienda — Etapa 10C: QA responsive, accesibilidad y performance
+
+#### Corregido
+- **Menú móvil roto (bug preexistente desde el commit inicial):** el `backdrop-filter: blur(14px)` del header lo convertía en bloque de contenedor para sus hijos `position: fixed`, así que la hoja del menú quedaba atrapada dentro del header de 73px y colapsaba a 48px (solo su padding): el menú se abría pero no se veía casi nada. El efecto de vidrio ahora vive en un pseudo-elemento `.site-header::before` (mismo aspecto, sin afectar a los elementos fixed hijos).
+- La hoja del menú es `position: fixed` al viewport, pero la barra de avisos empuja el header hacia abajo cuando no hay scroll: `js/ui/header.js` ahora ancla el tope de la hoja al borde real del header al abrir (`syncSheetTop`) y al redimensionar, para que nunca tape la fila del header (logo e ícono de cerrar).
+- Áreas táctiles < 44px en mobile: botón "Ver producto" del home (40→44 con `--tap-min`), botones chicos `.btn--sm` de la tienda (36→44 en pantallas ≤768px) e input de cantidad del carrito (40→44). En desktop (>768px) mantienen su tamaño original.
+- Contraste AA: `.eyebrow` del panel invertido del home (2.68:1 → 5.4:1 en claro / 4.9:1 en oscuro, con color propio porque el panel invierte los colores según el tema) y badge "Nuevo" (4.19:1 → 5.9:1) con el nuevo token `--color-success-strong` (declarado en los 3 bloques de `tokens.css`).
+- `label-content-name-mismatch` (23 links `.brand` y 4 cards de categorías): se eliminó el `aria-label` que no contenía el texto visible — el nombre accesible ahora sale del contenido, que siempre coincide.
+
+#### Verificado
+- **Consola limpia: 12/12 páginas públicas** (0 errores ni warnings).
+- **Responsive 12 páginas × 4 anchos (360/768/1024/1440): 0 overflow horizontal** (medido con un arnés temporal de iframes, ya eliminado). Menú hamburguesa y buscador probados en 360: abren/cierran, `aria-expanded` conmuta y el `overflow` del body se restaura (cierre por botón y por Escape).
+- **Lighthouse (home): accesibilidad 100 · buenas prácticas 100 · SEO 100, sin fallos, en tema claro y en oscuro.**
+- Reveal del home funcionando: las secciones en pantalla se revelan (`is-revealed`, opacidad 1) y las que quedan fuera permanecen ocultas hasta que entran.
+- Trazada de performance del home: pintado 92ms y layout 57ms acumulados en 8.4s de captura; 6 tareas >50ms (460ms de bloqueo) durante la carga en servidor de desarrollo — perfil candidato a seguimiento si se quiere pulir más.
+- Suite del backend: **92/92** ✓.
+
 ## [1.16.0] — 2026-10-30
 
 ### Tienda — Etapa 10B: pulido visual (reveal y tema)

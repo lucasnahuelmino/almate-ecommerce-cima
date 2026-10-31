@@ -39,6 +39,7 @@
   --color-border-strong: #d6ccbc;   /* Bordes más visibles (inputs) */
 
   --color-success: #4f7a4a;         /* Éxito / stock disponible */
+  --color-success-strong: #3f6139;  /* Verde de texto sobre salvia suave (5.9:1) */
   --color-warning: #8a5d16;         /* Advertencia / stock bajo */
   --color-warning-soft: #f6ecd6;    /* Fondo suave de advertencia (badges) */
   --color-danger: #b3341f;          /* Errores / agotado (6.1:1 sobre blanco) */
@@ -138,6 +139,7 @@
     --color-border-strong: #4d443a;
 
     --color-success: #8fb889;
+    --color-success-strong: #8fb889;
     --color-warning: #e3b768;
     --color-warning-soft: #3a2e18;
     --color-danger: #ef8a76;
@@ -177,6 +179,7 @@
   --color-border-strong: #4d443a;
 
   --color-success: #8fb889;
+  --color-success-strong: #8fb889;
   --color-warning: #e3b768;
   --color-warning-soft: #3a2e18;
   --color-danger: #ef8a76;
