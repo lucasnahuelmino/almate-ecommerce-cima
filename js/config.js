@@ -92,17 +92,16 @@ window.STORE_CONFIG = {
   },
 
   /* ---------- Catálogo remoto ----------
-     Mientras esté vacío, la tienda usa el catálogo embebido en
-     js/data/products.js. Al apuntar a la API del backend, la tienda lee
-     productos y categorías desde el servidor (lo que cargues en el panel
-     de administración es lo que se vende).
+     Vacío = la tienda usa el catálogo embebido en js/data/products.js.
+     Es el modo correcto para publicar la Fase 1: el sitio es estático y no
+     depende de ningún servidor.
 
-     DEMO LOCAL: apunta al backend corriendo en tu máquina. Cuando publiques
-     la tienda, cambiá esta URL por la del servidor en HTTPS (p. ej.
-     https://api.tu-dominio.com) y volvé a desplegar. Si el backend no está
-     accesible, la tienda muestra un aviso y no lista productos. */
+     Para usar el backend (Fase 2), poné acá su URL HTTPS pública, por ejemplo
+     https://api.tu-dominio.com. Nunca dejes http://127.0.0.1:3000 en el sitio
+     publicado: cada visitante intentaría leer su propia máquina y la tienda
+     aparecería vacía. */
   catalog: {
-    apiBaseUrl: "http://127.0.0.1:3000"
+    apiBaseUrl: ""
   },
 
   /* ---------- Cupones de descuento (estructura lista para usar) ----------

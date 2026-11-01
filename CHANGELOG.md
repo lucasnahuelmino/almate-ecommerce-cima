@@ -5,6 +5,30 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
 ---
 
+## [1.22.0] — 2026-11-01
+
+### Publicación — revisión de contenido y corrección del catálogo
+
+#### Corrección importante
+- `js/config.js`: `catalog.apiBaseUrl` estaba en `http://127.0.0.1:3000`. En el sitio publicado, cada visitante habría intentado leer **su propia máquina** y la tienda aparecería vacía. Ahora está vacío y la tienda usa el catálogo embebido (`js/data/products.js`), que es el modo correcto para la Fase 1.
+- `README.md`: el paso de despliegue ahora distingue `catalog.apiBaseUrl` (de dónde lee el catálogo) de `payments.apiBaseUrl` (dónde registra reservas y pedidos). Antes se mencionaba solo el segundo, lo que inducía al error anterior.
+
+#### Guía de contenido
+- Nuevo `CONTENIDO-PARA-PUBLICAR.md`: qué falta antes de abrir la tienda, con la tabla de los 24 productos (categoría, slug, precio, precio anterior, stock y foto actual), recomendaciones de fotos, condiciones comerciales a confirmar, páginas legales a validar, dominio y checklist final.
+- `README.md`: enlaces a la guía desde el índice, desde "Qué falta antes de vender de verdad" y desde el checklist de publicación.
+
+#### Verificador de contenido
+- Nuevo `tools/check-content.js` (`node tools/check-content.js`), sin dependencias ni conexión a internet. Revisa:
+  - que existan todas las imágenes referenciadas por productos y categorías;
+  - cuántas fotos siguen siendo provisorias (`.svg`) y cuántos productos tienen una sola foto;
+  - slugs y SKU duplicados, precios anteriores inválidos, categorías inexistentes y stock en cero;
+  - que `catalog.apiBaseUrl` no apunte a `localhost`;
+  - dominio público, datos legales, proveedor de pago, cuotas, envíos y notas de borrador en las páginas legales.
+- Salida en tres niveles: `[error]` bloquea y sale con código 1, `[pendiente]` es decisión del dueño, `[ok]` está correcto.
+
+#### Estado de la revisión
+- **0 errores.** 24 productos y 8 categorías con imágenes provisorias, un producto con stock 0 (a propósito o a confirmar), dominio pendiente, cuotas y envíos a confirmar, y 4 páginas legales aún marcadas como borrador.
+
 ## [1.21.0] — 2026-10-31
 
 ### Panel — filtros y exportación CSV de pedidos

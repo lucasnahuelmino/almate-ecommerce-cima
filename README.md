@@ -17,6 +17,7 @@ Tienda estática hecha con HTML, CSS y JavaScript. No requiere instalar programa
 - [API de catálogo y pagos — backend Fase 2](#api-de-catálogo-y-pagos--backend-fase-2)
 - [Probar Mercado Pago en modo TEST](server/PRUEBA-MERCADOPAGO.md)
 - [Límites importantes de esta versión](#límites-importantes-de-esta-versión)
+- [Contenido para publicar](CONTENIDO-PARA-PUBLICAR.md)
 - [Antes de publicar: checklist](#antes-de-publicar-checklist)
 - [SEO: URL del sitio y metadatos](#seo-url-del-sitio-y-metadatos)
 
@@ -245,6 +246,8 @@ Esta es la tienda completa **sin backend obligatorio**: se abre con doble clic, 
 
 ### Qué falta antes de vender de verdad
 
+> Todas estas tareas están explicadas paso a paso, con la tabla de los 24 productos, en **[CONTENIDO-PARA-PUBLICAR.md](./CONTENIDO-PARA-PUBLICAR.md)**.
+
 1. **Fotos reales** de los productos y categorías (hoy son placeholders): ver [Cambiar fotos](#cambiar-fotos) y la [lista de imágenes](./LISTA-IMAGENES.md).
 2. **Precios, stock y envíos confirmados** por el negocio.
 3. **Textos legales revisados** por contador o abogado, con razón social y CUIT definitivos.
@@ -289,7 +292,7 @@ En Render, por ejemplo:
 4. En el panel de desarrolladores de Mercado Pago, configurá la URL de Webhooks de prueba como `PUBLIC_API_URL` + `/api/webhooks/mercadopago`, habilitá eventos de pago, y guardá el secreto generado como `MP_WEBHOOK_SECRET`. El backend debe ser públicamente accesible por HTTPS para recibir avisos.
 5. Para habilitar el panel privado de pedidos, configurá `ADMIN_PASSWORD` como variable secreta del hosting; usá una contraseña aleatoria larga (al menos 16 caracteres) y guardala también en un gestor de contraseñas. Sin esa variable, `/admin` y sus rutas API devuelven `404`. En Render, configurá `TRUST_PROXY_HOPS=1` para que el backend identifique correctamente el proxy HTTPS y limite los intentos fallidos por IP. La sesión del panel dura una hora; cerrar sesión la invalida.
 6. Abrí `https://<api-host>/admin` para iniciar sesión. El panel lista pedidos almacenados en el backend, muestra contacto/dirección (no DNI), permite cambios auditados en el estado operativo de pagos aprobados y cancelar solicitudes WhatsApp para liberar stock. No altera pagos ni emite reembolsos.
-7. Desplegá el frontend estático por separado. Configurá `payments.apiBaseUrl` para conectar el catálogo remoto y registrar reservas por WhatsApp. Dejá `payments.provider` en `"whatsapp"` hasta validar URL, CORS, token TEST, secreto y webhook; luego podés configurar `"mercadopago"` para probar.
+7. Desplegá el frontend estático por separado. Para que el sitio lea productos y categorías desde el backend, configurá `catalog.apiBaseUrl` con la URL HTTPS pública de la API (vacío = catálogo embebido). Para registrar reservas y pedidos por WhatsApp, configurá además `payments.apiBaseUrl` con esa misma URL. Dejá `payments.provider` en `"whatsapp"` hasta validar URL, CORS, token TEST, secreto y webhook; luego podés configurar `"mercadopago"` para probar.
 8. Confirmá `/api/health`, el catálogo y un flujo sandbox completo: pago aprobado, rechazado/pendiente, retorno a gracias, consulta de estado y reintento del mismo webhook. No uses cuentas ni medios de pago reales.
 
 El archivo SQLite local está pensado para una sola instancia del backend con disco persistente. No habilites réplicas múltiples ni despliegues simultáneos que compartan ese archivo; para escalar, primero se debe migrar a una base de datos administrada compatible. El registro de auditoría del panel guarda cada cambio operativo con hora y estado anterior/nuevo, sin copiar datos del cliente.
@@ -317,6 +320,16 @@ Esta guía prepara un despliegue de prueba con configuración reforzada, no auto
 - Antes de aceptar pagos reales, se deben revisar la política de privacidad, la conservación de datos, la seguridad del webhook y la configuración de producción. El soporte de credenciales reales no está implementado y requiere autorización expresa del titular.
 
 ## Antes de publicar: checklist
+
+La guía completa, con la tabla de los 24 productos (precio, precio anterior, stock y foto actual), está en **[CONTENIDO-PARA-PUBLICAR.md](./CONTENIDO-PARA-PUBLICAR.md)**.
+
+Para revisar la parte técnica de una sola vez, en la carpeta del proyecto:
+
+```bash
+node tools/check-content.js
+```
+
+El comando no instala nada ni se conecta a internet. Marca `[error]` lo que bloquea la publicación (imágenes que no existen, catálogo apuntando a `localhost`), `[pendiente]` lo que decide el dueño (fotos reales, precios, dominio, legales) y `[ok]` lo que ya está bien. Sale con código 1 si hay errores.
 
 - [ ] Revisar nombre, WhatsApp, email, redes, horario, razón social y CUIT en `js/config.js`.
 - [ ] Confirmar precios, ofertas, stock, variantes y tarifas de envío.
