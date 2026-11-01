@@ -18,3 +18,6 @@ server/data/
 
 # Imágenes subidas desde el panel de administración
 server/data/uploads/
+
+# Fotos de trabajo antes de procesarlas (no se publican así)
+fotos-para-cargar/
