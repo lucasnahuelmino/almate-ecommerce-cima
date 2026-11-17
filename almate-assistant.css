@@ -14,7 +14,8 @@
 .almate {
   --almate-accent: var(--color-accent, #c8553d);
   --almate-accent-strong: var(--color-accent-strong, #b0442d);
-  --almate-accent-hover: var(--color-accent-hover, #b0442d);
+  --almate-accent-hover: var(--color-accent-hover, #93361f);
+  --almate-accent-text: var(--color-accent-text, #a8422e);
   --almate-accent-soft: var(--color-accent-soft, #f6e7e2);
   --almate-on-accent: var(--color-on-strong, #ffffff);
   --almate-surface: var(--color-surface, #ffffff);
@@ -58,7 +59,7 @@
   padding: 12px 20px;
   border: 0;
   border-radius: var(--radius-pill, 999px);
-  background-color: var(--almate-accent);
+  background-color: var(--almate-accent-strong);
   color: var(--almate-on-accent);
   font: inherit;
   font-size: var(--fs-sm, 0.9rem);
@@ -196,7 +197,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: var(--almate-accent);
+  background-color: var(--almate-accent-strong);
   color: var(--almate-on-accent);
   font-family: var(--font-display, Georgia, serif);
   font-size: 1.125rem;
@@ -307,7 +308,7 @@
   border-color: transparent;
   border-radius: var(--radius-md, 16px);
   border-bottom-right-radius: 4px;
-  background-color: var(--almate-accent);
+  background-color: var(--almate-accent-strong);
   color: var(--almate-on-accent);
   box-shadow: none;
 }
@@ -329,7 +330,7 @@
   display: inline-block;
   margin-top: 8px;
   margin-right: 12px;
-  color: var(--almate-accent-strong);
+  color: var(--almate-accent-text);
   font-weight: var(--fw-semibold, 600);
   text-decoration: underline;
   text-underline-offset: 2px;
@@ -505,7 +506,7 @@
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background-color: var(--almate-accent);
+  background-color: var(--almate-accent-strong);
   color: var(--almate-on-accent);
   cursor: pointer;
   transition: background-color var(--transition-fast, 150ms) var(--almate-ease);

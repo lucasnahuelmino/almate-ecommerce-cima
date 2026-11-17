@@ -36,10 +36,15 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 - Prueba de humo del montaje con un DOM simulado: apertura, respuesta, submenú, "Volver al menú", cierre y crédito, sin errores de ejecución.
 - `node tools/check-content.js`: **0 errores**, 8 pendientes ya conocidos.
 - Suite del backend sin cambios: **110/110**.
-- **Límite de esta etapa:** no hubo navegador disponible en la sesión, así que falta la verificación visual e interactiva final en Chrome/Edge y en un teléfono real.
 
-#### Observación (no corregida en esta etapa)
-- Los enlaces de categoría de la Home usan `category.slug` y el catálogo filtra por `category.id`. Solo difieren en "Mesa y Vajilla" (`mesa-y-vajilla` frente a `mesa-vajilla`), por lo que ese acceso muestra el catálogo sin filtrar. El asistente usa el `id` correcto. Se recomienda corregir `js/pages/home.js` en una etapa aparte.
+#### Verificación en navegador y corrección de contraste
+- Las 12 páginas cargan el asistente una sola vez, con `business.id = cima`, el crédito correcto, sin errores de consola y sin desborde horizontal (`overflowX = 0`).
+- El panel abre en escritorio con ancho de 400 px, `z-index: 150`, conversación con scroll automático y 7 opciones en el menú principal.
+- En celular (360 y 390 px), el botón flotante pasa a círculo de 56×56 px con texto accesible oculto; en la ficha de producto se activa `almate--lifted` y tanto el botón como el panel quedan por encima de `.product-bottom-bar` sin taparla.
+- Consultas verificadas: "¿cuánto sale el envío?" responde CABA y GBA $ 6.500, Interior $ 9.800 y envío gratis desde $ 80.000; "Cuotas" responde "hasta 6 cuotas sin interés" con enlace a WhatsApp; una consulta sin relación muestra la respuesta alternativa con WhatsApp.
+- Las 9 categorías del menú generan enlaces `tienda.html?category=<id>` y el catálogo aplica el filtro correctamente (Mesa y Vajilla: 3 productos). Se comprobó además que `shop.js` normaliza tanto el `id` como el `slug`, así que los enlaces de la Home también funcionan.
+- **Corrección de contraste (WCAG AA):** en modo claro, `--color-accent` (`#C8553D`) sobre blanco daba 4.35:1 en el botón flotante, el avatar y la burbuja del usuario. Se cambió a `--color-accent-strong` (`#B0442D`, **5.66:1** en claro y **4.95:1** en oscuro) y los enlaces de respuesta usan `--color-accent-text` (**6.03:1** en claro y **7.01:1** en oscuro).
+- Límite: la ventana del navegador no permitió capturar imágenes (`screenshot` requiere una ventana visible), así que la revisión visual se hizo sobre el DOM, los estilos calculados y la interacción real en Chromium.
 
 ## [1.22.0] — 2026-11-01
 
