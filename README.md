@@ -12,6 +12,7 @@ Tienda estática hecha con HTML, CSS y JavaScript. No requiere instalar programa
 - [Cambiar fotos](#cambiar-fotos)
 - [Editar categorías](#editar-categorías)
 - [Cambiar datos del negocio](#cambiar-datos-del-negocio)
+- [Asistente virtual](#asistente-virtual)
 - [Publicar la tienda](#publicar-la-tienda)
 - [Entrega de la Fase 1](#entrega-de-la-fase-1)
 - [API de catálogo y pagos — backend Fase 2](#api-de-catálogo-y-pagos--backend-fase-2)
@@ -185,6 +186,46 @@ Editá `js/config.js` con el editor de texto:
 - `legal`: razón social/nombre comercial y CUIT.
 
 Los precios de productos y costos de envío se escriben como números enteros en pesos, sin símbolos ni separadores, por ejemplo `89900`. Confirmá los importes y condiciones antes de publicarlos. No agregues contraseñas, claves ni tokens a `config.js`: el contenido del sitio es público.
+
+## Asistente virtual
+
+La tienda tiene un asistente virtual propio que aparece como botón flotante abajo a la derecha. **No usa inteligencia artificial ni servicios externos**: responde con menús, preguntas frecuentes y palabras clave, y deriva a WhatsApp cuando no tiene una respuesta confiable. No tiene costo por consulta y funciona sin conexión a internet (salvo el enlace a WhatsApp).
+
+### Archivos
+
+| Archivo | Función |
+| --- | --- |
+| `almate-assistant.js` | Motor del asistente. Es igual en todas las plantillas ALMATE: no contiene datos del negocio. |
+| `almate-assistant.config.js` | Configuración de CIMA: menús, preguntas, respuestas, sinónimos y WhatsApp. Es el único archivo que se edita. |
+| `almate-assistant.css` | Diseño del botón y del panel, adaptable a celular y computadora. |
+
+Los tres se cargan al final del `<head>` de las 12 páginas públicas. No modifiques esos archivos ni los nombres: el componente debe seguir siendo compatible con las demás plantillas.
+
+### Cambiar una respuesta o agregar una pregunta
+
+1. Abrí `almate-assistant.config.js` con el editor de texto.
+2. Para cambiar un texto, buscá su `id` dentro de `guidedMenus` o `faq` y editá `text` o `answer`. Podés usar un texto entre comillas o una lista de párrafos entre corchetes.
+3. Para agregar una pregunta, copiá un bloque de `faq` y asignale un `id` nuevo. Completá `question`, `answer` y `keywords`. Las palabras clave van sin acentos y en minúsculas; después sumá sinónimos en `keywordMatching.synonyms` si hace falta.
+4. Si querés que la pregunta aparezca en el menú "Preguntas frecuentes", agregá su `id` a `childrenFromFaq` del menú `ver-faq`.
+5. Guardá y recargá la página. El asistente se abre con el botón flotante.
+
+Los datos comerciales (WhatsApp, envíos, cuotas, horario y contacto) se leen de `js/config.js`: si cambiás un costo o el número de WhatsApp, el asistente se actualiza solo. **No escribas precios ni horarios directamente en el asistente** para evitar datos duplicados o desactualizados.
+
+### Verificar antes de publicar
+
+```bash
+node tools/check-assistant.js
+node --test tools/assistant.test.js
+```
+
+El primero revisa la configuración y que el asistente esté integrado una sola vez en las 12 páginas. El segundo prueba 35 consultas reales ("cuánto sale el envío", "hay cuotas", "dónde están", etc.). Ambos funcionan sin instalar nada.
+
+### Límites y ampliación futura
+
+- El asistente **aclara que es automático** y no simula ser una persona.
+- No consulta stock, precios ni pedidos en tiempo real. Los módulos `catalog`, `priceLookup`, `stockLookup` y `ai` están apagados a propósito.
+- Cuando se implemente **ALMATE IA Comercial**, se activan esos módulos y se registra un manejador con `window.AlmateAssistant.setAIHandler(...)`. El diseño, las preguntas frecuentes y la configuración del negocio se conservan.
+- Si una respuesta no existe en la configuración, el asistente lo dice y ofrece WhatsApp en lugar de inventar información.
 
 ## Publicar la tienda
 

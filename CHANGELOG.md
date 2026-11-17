@@ -5,6 +5,42 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
 ---
 
+## [1.23.0] — 2026-11-16
+
+### Asistente virtual ALMATE (sin IA ni servicios externos)
+
+#### Componente nuevo
+- `almate-assistant.js`: motor universal del asistente. Menús y submenús guiados, preguntas frecuentes, reconocimiento de texto por palabras clave y sinónimos, respuestas alternativas, botón "Volver al menú", acceso a WhatsApp y crédito exacto. Sin dependencias, sin frameworks y sin conexiones externas.
+- `almate-assistant.config.js`: configuración de CIMA. **7 menús raíz** (Envíos, Pagos, Mi pedido, Productos, Cambios, WhatsApp y FAQ), **30 opciones** en total, **9 categorías reales** del catálogo y **21 preguntas frecuentes**. Los enlaces de categoría usan `tienda.html?category=<id>`, que es el formato que entiende el catálogo.
+- `almate-assistant.css`: estilos aislados bajo `.almate`, con los tokens de `css/tokens.css`, modo oscuro heredado, adaptación a celular, `prefers-reduced-motion`, oculto al imprimir y `z-index: 150` (sobre el header, debajo del carrito y los modales).
+
+#### Integración
+- Los tres archivos se cargan antes de `</head>` en las 12 páginas públicas: inicio, tienda, producto, carrito, checkout, gracias, contacto, envíos y devoluciones, términos, privacidad, arrepentimiento y 404.
+- `estilos.html` y el panel `server/admin/` quedan excluidos a propósito: no cargan los datos comerciales de la tienda.
+- El asistente se monta una sola vez, con guarda por id y por API existente.
+
+#### Datos y contención
+- Los datos comerciales se leen de `window.STORE_CONFIG` y `window.CATEGORIES`: WhatsApp, envíos, envío gratis, cuotas, descuento por transferencia, horario y contacto no se duplican.
+- Cuando un dato no existe o no se puede confirmar (plazo exacto, ubicación, stock puntual), la respuesta deriva a WhatsApp en lugar de afirmar algo. El asistente se presenta como virtual y automático.
+- Se corrigieron sinónimos que generaban falsos positivos: "hay" ya no activa stock, "cuándo" ya no activa plazos, "cuánto" ya no activa precios por sí solo y se agregó "local" a ubicación.
+- El puntaje de coincidencia ahora premia la respuesta que cubre todas sus palabras clave: "precio" responde la FAQ de precios y no la de envíos.
+
+#### Preparación para ALMATE IA Comercial
+- Configuración modular con `guidedMenus`, `keywordMatching`, `faq`, `whatsapp`, `ai`, `catalog`, `priceLookup` y `stockLookup`.
+- Todos los módulos avanzados quedan apagados. El motor expone `registerModule(nombre, funcion)` y `setAIHandler(funcion)`; si el módulo de IA falla o no responde, el asistente sigue funcionando con las respuestas locales.
+- El identificador `business.id` viaja en el DOM (`data-almate-business`) y en los eventos (`almate:ready`, `almate:message`, `almate:faq`, `almate:fallback`).
+
+#### Herramientas y pruebas
+- Nuevo `tools/check-assistant.js`: valida archivos, ids únicos, crédito, módulos apagados, enlaces, categorías reales, WhatsApp coincidente y la integración en las 12 páginas. Resultado: **0 errores, 0 avisos**.
+- Nuevo `tools/assistant.test.js`: **35/35** pruebas con la configuración real (consultas con acentos, mayúsculas, sinónimos, categorías y crédito).
+- Prueba de humo del montaje con un DOM simulado: apertura, respuesta, submenú, "Volver al menú", cierre y crédito, sin errores de ejecución.
+- `node tools/check-content.js`: **0 errores**, 8 pendientes ya conocidos.
+- Suite del backend sin cambios: **110/110**.
+- **Límite de esta etapa:** no hubo navegador disponible en la sesión, así que falta la verificación visual e interactiva final en Chrome/Edge y en un teléfono real.
+
+#### Observación (no corregida en esta etapa)
+- Los enlaces de categoría de la Home usan `category.slug` y el catálogo filtra por `category.id`. Solo difieren en "Mesa y Vajilla" (`mesa-y-vajilla` frente a `mesa-vajilla`), por lo que ese acceso muestra el catálogo sin filtrar. El asistente usa el `id` correcto. Se recomienda corregir `js/pages/home.js` en una etapa aparte.
+
 ## [1.22.0] — 2026-11-01
 
 ### Publicación — revisión de contenido y corrección del catálogo
