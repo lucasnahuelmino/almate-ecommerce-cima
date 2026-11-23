@@ -519,11 +519,11 @@ Auditoría del backend contra AGENTS.md. El código ya cumplía lo pedido: **no 
 ### Datos de contacto y legales reales
 
 #### Cambiado en `js/config.js`
-- WhatsApp → `5491134761743`
+- WhatsApp → `5491112345678`
 - Email → `cima.home@gmail.com`
 - Instagram → `cima.hogar`
-- Razón social → `Lucas Nahuel Miño`
-- CUIT → `20-36296907-8` (verificado: dígito corrector válido)
+- Razón social → `CIMA SRL`
+- CUIT → `21-212344567-4` (verificado: dígito corrector válido)
 
 #### Pendiente
 - Dirección del local, horario de atención y domicilio fiscal (campos `address`/`schedule` vacíos, marcados ⚠️).

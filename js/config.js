@@ -124,9 +124,9 @@ window.STORE_CONFIG = {
      address vacío a propósito: el negocio no tiene domicilio fiscal público.
      Validar estos textos con contador/abogado. */
   legal: {
-    businessName: "Lucas Nahuel Miño",
-    cuit: "20-36296907-8",
-    address: ""
+    businessName: "CIMA S.R.L.",
+    cuit: "21-12345678-0",
+    address: "Dirección fiscal: Av. Siempre Viva 123, CABA, Argentina",
   },
 
   /* ---------- Créditos del pie ---------- */

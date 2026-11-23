@@ -155,9 +155,9 @@ Cuatro páginas siguen marcadas como **borrador** y lo dicen en pantalla:
 
 | Dato | Valor |
 | --- | --- |
-| Razón social | Lucas Nahuel Miño |
-| CUIT | 20-36296907-8 |
-| WhatsApp | 5491134761743 |
+| Razón social | CIMA |
+| CUIT | 21-123345678-0 |
+| WhatsApp | 5491112345678 |
 | Email | cima.home@gmail.com |
 | Instagram | cima.hogar |
 | Horario | De 9 a 18 hs |

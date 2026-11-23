@@ -35,7 +35,7 @@ window.PRODUCTS = [
     comparePrice: 109900,
     stock: 14,
     sku: "COC-OLL-008",
-    images: ["img/products/set-ollas-antiadherente-8-piezas.svg"],
+    images: ["img/products/set-ollas-antiadherente-8-piezas.webp"],
     shortDescription: "Set completo de ollas y sartenes antiadherentes con tapas de vidrio.",
     description: "<p>Un set completo para equipar toda la cocina: ollas de distintos tamaños, sartenes y tapas de vidrio templado. El recubrimiento antiadherente permite cocinar con menos aceite y limpiar sin esfuerzo.</p><p>Apto para todo tipo de hornallas, incluida inducción. Asas ergonómicas que no se calientan.</p>",
     specs: [
@@ -86,7 +86,7 @@ window.PRODUCTS = [
     comparePrice: 54900,
     stock: 9,
     sku: "COC-CUC-006",
-    images: ["img/products/set-cuchillos-acero-6-piezas.svg"],
+    images: ["img/products/set-cuchillos-acero-6-piezas.webp"],
     shortDescription: "Cuchillería de acero inoxidable con taco de madera.",
     description: "<p>Set de cuchillería completo en acero inoxidable de corte duradero, con mangos de madera ergonómicos. Incluye los cuchillos más usados de la cocina.</p><p>Se entrega con taco de madera para guardarlos con orden.</p>",
     specs: [
@@ -112,7 +112,7 @@ window.PRODUCTS = [
     comparePrice: 152900,
     stock: 6,
     sku: "MVA-VAJ-012",
-    images: ["img/products/vajilla-completa-12-personas.svg"],
+    images: ["img/products/vajilla-completa-12-personas.webp"],
     shortDescription: "Vajilla de porcelana blanca para 12 personas (36 piezas).",
     description: "<p>Vajilla completa de porcelana blanca, ideal para recepciones y comidas familiares. Rústica pero elegante,Combina con cualquier mesa.</p><p>Apta para lavavajillas y microondas.</p>",
     specs: [
@@ -262,7 +262,7 @@ window.PRODUCTS = [
     comparePrice: null,
     stock: 18,
     sku: "BAN-TOA-004",
-    images: ["img/products/toallas-algodon-pack-4.svg"],
+    images: ["img/products/toallas-algodon-pack-4.webp"],
     shortDescription: "Pack de 4 toallas de algodón suave y absorbente.",
     description: "<p>Pack de cuatro toallas de algodón puro, suaves y muy absorbentes. Tejido denso que dura muchos lavados.</p><p>Incluye 2 toallas de baño y 2 de mano.</p>",
     specs: [
@@ -338,7 +338,7 @@ window.PRODUCTS = [
     comparePrice: null,
     stock: 10,
     sku: "TEX-MAN-001",
-    images: ["img/products/manta-tejida-beige.svg"],
+    images: ["img/products/manta-tejida-beige.webp"],
     shortDescription: "Manta tejida beige, cálida y decorativa.",
     description: "<p>Manta tejida de tono beige, cálida y con textura. Perfecta para el sillón, la cama o para tomar el fresco en el balcón.</p><p>Tejido suave que no pica, ideal para piel sensible.</p>",
     specs: [
