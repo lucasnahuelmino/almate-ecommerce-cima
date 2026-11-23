@@ -21,6 +21,35 @@
 (function () {
   "use strict";
 
+  /* ---------- Banner de demostración (ALMATE Digital Studio) ----------
+     Se inyecta en todas las páginas públicas para aclarar que la tienda es
+     una demo y que los productos no son reales. */
+  if (document.body && !document.querySelector(".demo-banner")) {
+    const banner = document.createElement("div");
+    banner.className = "demo-banner";
+    banner.setAttribute("role", "note");
+    banner.setAttribute("aria-label", "Aviso de demostración");
+    const inner = document.createElement("div");
+    inner.className = "demo-banner__inner";
+    const text = document.createElement("p");
+    text.className = "demo-banner__text";
+    text.innerHTML = "Esta es una <strong>demostración pública</strong> de ALMATE Digital Studio. Los productos y precios no representan ofertas reales.";
+    const links = document.createElement("span");
+    links.className = "demo-banner__links";
+    const mail = document.createElement("a");
+    mail.href = "mailto:contacto@almatedigitalstudio.com.ar";
+    mail.textContent = "contacto@almatedigitalstudio.com.ar";
+    const site = document.createElement("a");
+    site.href = "https://www.almatedigitalstudio.com.ar";
+    site.target = "_blank";
+    site.rel = "noopener noreferrer";
+    site.textContent = "www.almatedigitalstudio.com.ar";
+    links.append(mail, site);
+    inner.append(text, links);
+    banner.append(inner);
+    document.body.insertBefore(banner, document.body.firstChild);
+  }
+
   const cfg = window.STORE_CONFIG;
   if (!cfg) return;
 

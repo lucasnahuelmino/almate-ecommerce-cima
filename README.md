@@ -12,6 +12,7 @@ Tienda estática hecha con HTML, CSS y JavaScript. No requiere instalar programa
 - [Cambiar fotos](#cambiar-fotos)
 - [Editar categorías](#editar-categorías)
 - [Cambiar datos del negocio](#cambiar-datos-del-negocio)
+- [Banner de demostración](#banner-de-demostración)
 - [Asistente virtual](#asistente-virtual)
 - [Publicar la tienda](#publicar-la-tienda)
 - [Entrega de la Fase 1](#entrega-de-la-fase-1)
@@ -186,6 +187,12 @@ Editá `js/config.js` con el editor de texto:
 - `legal`: razón social/nombre comercial y CUIT.
 
 Los precios de productos y costos de envío se escriben como números enteros en pesos, sin símbolos ni separadores, por ejemplo `89900`. Confirmá los importes y condiciones antes de publicarlos. No agregues contraseñas, claves ni tokens a `config.js`: el contenido del sitio es público.
+
+## Banner de demostración
+
+Mientras el sitio se usa como demostración pública de ALMATE Digital Studio, aparece una franja superior en todas las páginas con el aviso de que los productos y precios no son reales y los datos de contacto de ALMATE. El texto y los enlaces se generan en `js/ui/layout.js` (buscá “Banner de demostración”) y los estilos están en `css/components.css` bajo `.demo-banner`.
+
+Antes de publicar la tienda para un cliente real, eliminá ese bloque de `layout.js` o comentá la inyección del banner, y ajustá el CSS si hace falta. No hace falta tocar las páginas HTML: el banner se agrega automáticamente.
 
 ## Asistente virtual
 

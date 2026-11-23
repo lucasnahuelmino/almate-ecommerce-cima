@@ -572,8 +572,57 @@ select.field__input {
 }
 
 /* ==========================================================================
-   10. TOASTS (avisos flotantes, ej. "Agregado al carrito")
+   BANNER DE DEMOSTRACIÓN (demo pública de ALMATE Digital Studio)
    ========================================================================== */
+
+.demo-banner {
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-accent-soft);
+  color: var(--color-accent-text);
+  font-size: var(--fs-xs);
+  line-height: var(--lh-snug, 1.35);
+  text-align: center;
+}
+
+.demo-banner__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 12px;
+  max-width: var(--container-max, 1200px);
+  margin: 0 auto;
+}
+
+.demo-banner__text {
+  margin: 0;
+}
+
+.demo-banner__links {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.demo-banner a {
+  color: var(--color-accent-strong);
+  font-weight: var(--fw-semibold, 600);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.demo-banner a:hover {
+  color: var(--color-accent-hover);
+}
+
+@media (max-width: 480px) {
+  .demo-banner {
+    font-size: 0.7rem;
+    padding: 6px var(--space-3);
+  }
+}
 
 .toast {
   position: fixed;
